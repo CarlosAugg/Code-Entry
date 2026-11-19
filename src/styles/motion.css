@@ -1,0 +1,794 @@
+/* Linguagem de movimento e microinterações — Code Entry Fase 2 */
+
+:root {
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 380ms;
+  --dur-chart: 620ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ceFadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ceScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes ceToastIn {
+  from {
+    opacity: 0;
+    transform: translateX(18px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes ceShimmer {
+  0% {
+    background-position: -220% 0;
+  }
+  100% {
+    background-position: 220% 0;
+  }
+}
+
+@keyframes ceCheckPop {
+  0% {
+    transform: scale(0.72);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes ceTourSpotlightGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(var(--accent-secondary-rgb), 0.92),
+      0 0 26px rgba(var(--accent-rgb), 0.48);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--accent-secondary),
+      0 0 38px rgba(var(--accent-rgb), 0.68);
+  }
+}
+
+/* Entrada suave ao alternar de página */
+.ce-page-enter {
+  animation: ceFadeSlideUp var(--dur-base) var(--ease-out-expo) both;
+}
+
+/* Modal / Popover / Dropdown */
+.ce-modal-card,
+.ce-popover,
+.ce-search-results {
+  animation: ceScaleIn var(--dur-fast) var(--ease-out-expo) both;
+}
+
+.ce-modal-backdrop {
+  animation: ceFadeIn var(--dur-fast) ease both;
+}
+
+@keyframes ceFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Toasts tipados */
+.ce-toast {
+  animation: ceToastIn var(--dur-base) var(--ease-out-expo) both;
+}
+
+.ce-toast.is-success {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.ce-toast.is-error {
+  border-color: rgba(239, 68, 68, 0.48);
+}
+
+.ce-toast.is-info {
+  border-color: rgba(56, 189, 248, 0.42);
+}
+
+/* Microinterações de cards, botões e progresso */
+.ce-card-interactive {
+  transition:
+    transform var(--dur-base) var(--ease-out-expo),
+    border-color var(--dur-base) var(--ease-standard),
+    box-shadow var(--dur-base) var(--ease-standard),
+    background var(--dur-base) var(--ease-standard);
+}
+
+.ce-card-interactive:hover {
+  transform: translateY(-2px);
+}
+
+.ce-card-interactive:active {
+  transform: translateY(0) scale(0.992);
+}
+
+.ce-btn {
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+}
+
+.ce-btn:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+.ce-nav-item {
+  transition:
+    background var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    padding var(--dur-base) var(--ease-out-expo);
+}
+
+.ce-progress-fill {
+  transition: width var(--dur-chart) var(--ease-out-expo);
+}
+
+.ce-check-pop {
+  animation: ceCheckPop 260ms var(--ease-out-expo) both;
+}
+
+/* Tooltip contextual renderizado em portal */
+.ce-tooltip-portal {
+  position: fixed;
+  z-index: 950;
+  pointer-events: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-soft);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  max-width: 240px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+  animation: ceScaleIn 120ms var(--ease-out-expo) both;
+}
+
+/* Skeleton loading states */
+.ce-skeleton {
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(148, 163, 184, 0.17) 50%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  background-size: 220% 100%;
+  animation: ceShimmer 1.5s linear infinite;
+}
+
+html.light-theme .ce-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.06) 0%,
+    rgba(15, 23, 42, 0.13) 50%,
+    rgba(15, 23, 42, 0.06) 100%
+  );
+  background-size: 220% 100%;
+}
+
+/* Animação das barras do gráfico de histórico */
+.ce-bar-fill {
+  transition: height var(--dur-chart) var(--ease-out-expo), opacity var(--dur-fast) ease;
+}
+
+/* Sidebar recolhível */
+.ce-sidebar {
+  transition: width var(--dur-base) var(--ease-out-expo);
+}
+
+/* Product Tour spotlight + balão */
+.ce-tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 980;
+  background: rgba(4, 7, 15, 0.72);
+  animation: ceFadeIn var(--dur-base) ease both;
+}
+
+.ce-tour-spotlight-box {
+  position: fixed;
+  z-index: 985;
+  border-radius: 16px;
+  pointer-events: none;
+  transition:
+    top 260ms var(--ease-out-expo),
+    left 260ms var(--ease-out-expo),
+    width 260ms var(--ease-out-expo),
+    height 260ms var(--ease-out-expo);
+  animation: ceTourSpotlightGlow 2.4s ease-in-out infinite;
+}
+
+.ce-tour-quadrant {
+  position: fixed;
+  z-index: 980;
+  background: rgba(4, 7, 15, 0.72);
+  transition: background 180ms ease;
+}
+
+.ce-tour-card {
+  position: fixed;
+  z-index: 990;
+  width: min(390px, calc(100vw - 24px));
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+  border-radius: 18px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-accent);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.58), 0 0 32px rgba(var(--accent-rgb), 0.22);
+  padding: 20px;
+  animation: ceScaleIn var(--dur-base) var(--ease-out-expo) both;
+}
+
+/* Canvas Background Global (React Bits DotGrid + Particles) */
+.ce-interactive-bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ce-main-col {
+  position: relative;
+  z-index: 1;
+}
+
+/* React Bits: Spotlight Card (superfície + borda luminosa) & StarBorder */
+.ce-spotlight-card {
+  position: relative;
+  overflow: hidden;
+  --spot-x: 50%;
+  --spot-y: 50%;
+  --spot-color: rgba(var(--accent-rgb), 0.24);
+}
+
+.ce-spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    320px circle at var(--spot-x) var(--spot-y),
+    var(--spot-color),
+    transparent 65%
+  );
+  transition: opacity 220ms ease;
+  z-index: 0;
+}
+
+.ce-spotlight-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    240px circle at var(--spot-x) var(--spot-y),
+    rgba(var(--accent-secondary-rgb), 0.85),
+    rgba(var(--accent-tertiary-rgb), 0.45) 40%,
+    transparent 70%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  transition: opacity 220ms ease;
+  z-index: 1;
+}
+
+.ce-spotlight-card:hover::before,
+.ce-spotlight-card:hover::after {
+  opacity: 1;
+}
+
+.ce-spotlight-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes ceStarBorderGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(var(--accent-secondary-rgb), 0.34),
+      0 10px 28px rgba(var(--accent-rgb), 0.14);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(var(--accent-tertiary-rgb), 0.48),
+      0 12px 34px rgba(var(--accent-rgb), 0.24);
+  }
+}
+
+.ce-star-border {
+  animation: ceStarBorderGlow 4.2s ease-in-out infinite;
+}
+
+/* React Bits: ShinyText */
+@keyframes ceShinySweep {
+  0% {
+    background-position: 150% center;
+  }
+  100% {
+    background-position: -50% center;
+  }
+}
+
+.ce-shiny-text {
+  display: inline-block;
+  color: inherit;
+  background: linear-gradient(
+    115deg,
+    currentColor 0%,
+    currentColor 38%,
+    #ffffff 50%,
+    currentColor 62%,
+    currentColor 100%
+  );
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ceShinySweep var(--shiny-duration, 4s) ease-in-out infinite;
+}
+
+html.light-theme .ce-shiny-text {
+  background: linear-gradient(
+    115deg,
+    currentColor 0%,
+    currentColor 38%,
+    var(--accent-tertiary) 50%,
+    currentColor 62%,
+    currentColor 100%
+  );
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* React Bits: Ambient Aurora & Hero Layers */
+.ce-ambient-aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ce-hero-banner > *:not(.ce-ambient-aurora),
+.ce-track-hero > *:not(.ce-ambient-aurora),
+.ce-lesson-banner > *:not(.ce-ambient-aurora) {
+  position: relative;
+  z-index: 1;
+}
+
+.ce-hero-title span.ce-blur-word {
+  color: inherit;
+  white-space: normal;
+}
+
+.ce-hero-title span.ce-blur-highlight {
+  color: var(--accent-secondary);
+  white-space: normal;
+}
+
+/* Modal de Personalização Inicial */
+.ce-personalization-modal {
+  width: min(580px, calc(100vw - 24px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  border-radius: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-accent);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.6), 0 0 36px rgba(var(--accent-rgb), 0.18);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Toast Notification de Conclusão (não bloqueia a tela) */
+.ce-completion-toast {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  z-index: 940;
+  width: min(410px, calc(100vw - 24px));
+  border-radius: 16px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid rgba(34, 197, 94, 0.48);
+  box-shadow:
+    0 20px 48px rgba(2, 6, 20, 0.64),
+    0 0 28px rgba(34, 197, 94, 0.18);
+  padding: 15px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+}
+
+.ce-completion-toast-metrics {
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: rgba(15, 23, 42, 0.42);
+  border: 1px solid var(--border-subtle);
+}
+
+html.light-theme .ce-completion-toast-metrics {
+  background: rgba(241, 245, 253, 0.9);
+}
+
+.ce-completion-toast-ach {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.34);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.ce-completion-toast-timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #22c55e, var(--celeb-accent, #8b5cf6));
+  transform-origin: left center;
+}
+
+@media (max-width: 680px) {
+  .ce-completion-toast {
+    bottom: 72px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
+.ce-celebration-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.36);
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+.ce-goal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .ce-goal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ce-goal-option {
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 120ms ease;
+}
+
+.ce-goal-option:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+}
+
+.ce-goal-option strong {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.ce-goal-option span {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.ce-goal-option.is-selected {
+  border-color: var(--accent-secondary);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--border-accent);
+}
+
+/* Seletor de Temas e Paletas Estilo Opera GX */
+.ce-theme-mode-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ce-theme-mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 120ms ease;
+}
+
+.ce-theme-mode-btn:hover {
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+
+.ce-theme-mode-btn.is-active {
+  border-color: var(--accent-primary);
+  background: var(--accent-soft-strong);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px var(--border-accent);
+}
+
+.ce-theme-mode-switch.is-compact .ce-theme-mode-btn {
+  height: 32px;
+  font-size: 12px;
+  border-radius: 9px;
+}
+
+.ce-theme-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .ce-theme-palette-grid.is-onboarding {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ce-theme-swatch-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 13px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-elevated);
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, transform 140ms ease, box-shadow 160ms ease;
+}
+
+.ce-theme-swatch-card:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+}
+
+.ce-theme-swatch-card.is-selected {
+  border-color: var(--accent-primary);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 1px var(--border-accent), var(--shadow-card);
+}
+
+.ce-theme-swatch-card.is-compact {
+  padding: 8px;
+  gap: 6px;
+  border-radius: 11px;
+}
+
+.ce-theme-preview {
+  height: 54px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  display: grid;
+  grid-template-columns: 28% 1fr;
+}
+
+.ce-theme-swatch-card.is-compact .ce-theme-preview {
+  height: 38px;
+}
+
+.ce-theme-preview-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 5px;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.ce-theme-preview-main {
+  padding: 6px 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ce-theme-dot-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Indicador interativo no ProductTour */
+.ce-tour-action-banner {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  border: 1px solid var(--border-accent);
+  font-size: 12.5px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ce-tour-pointer-pill {
+  position: fixed;
+  z-index: 988;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+@keyframes ceRunPulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.ce-running-pulse {
+  animation: ceRunPulse 0.9s ease-in-out infinite;
+}
+
+/* Respeito estrito a prefers-reduced-motion e ao toggle explícito */
+@media (prefers-reduced-motion: reduce) {
+  .ce-star-border,
+  .ce-shiny-text,
+  .ce-running-pulse,
+  .ce-page-enter,
+  .ce-modal-card,
+  .ce-modal-backdrop,
+  .ce-popover,
+  .ce-search-results,
+  .ce-toast,
+  .ce-check-pop,
+  .ce-skeleton,
+  .ce-tooltip-portal,
+  .ce-tour-backdrop,
+  .ce-tour-spotlight-box,
+  .ce-tour-card {
+    animation: none !important;
+  }
+
+  .ce-spotlight-card:hover::before,
+  .ce-spotlight-card:hover::after {
+    opacity: 0;
+  }
+
+  .ce-shiny-text {
+    background: none !important;
+    -webkit-text-fill-color: currentColor !important;
+  }
+
+  .ce-card-interactive,
+  .ce-btn,
+  .ce-nav-item,
+  .ce-progress-fill,
+  .ce-bar-fill,
+  .ce-sidebar,
+  .ce-tour-spotlight-box {
+    transition-duration: 0.01ms !important;
+  }
+
+  .ce-card-interactive:hover,
+  .ce-card-interactive:active,
+  .ce-btn:active:not(:disabled) {
+    transform: none !important;
+  }
+}
+
+html.reduced-motion *,
+html.reduced-motion *::before,
+html.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+html.reduced-motion .ce-card-interactive:hover,
+html.reduced-motion .ce-card-interactive:active,
+html.reduced-motion .ce-btn:active:not(:disabled) {
+  transform: none !important;
+}
+
+html.reduced-motion .ce-spotlight-card:hover::before,
+html.reduced-motion .ce-spotlight-card:hover::after {
+  opacity: 0 !important;
+}
+
+html.reduced-motion .ce-shiny-text {
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+}

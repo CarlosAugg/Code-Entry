@@ -1,0 +1,372 @@
+:root {
+  color-scheme: dark;
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* Paleta Padrão — Nebula Violet (Escuro) */
+  --bg-canvas: #070a14;
+  --bg-sidebar: #0a0e1c;
+  --bg-topbar: rgba(9, 13, 27, 0.86);
+  --bg-surface: #0f1528;
+  --bg-surface-elevated: #151c34;
+  --bg-surface-hover: #1b2442;
+  --bg-editor: #080c18;
+  --bg-input: #0d1324;
+
+  --accent-primary: #7545f5;
+  --accent-secondary: #9b65ff;
+  --accent-tertiary: #4ea5ff;
+  --accent-blue: #4ea5ff;
+  --accent-success: #22c55e;
+  --accent-warning: #f59e0b;
+  --accent-danger: #f87171;
+
+  --accent-rgb: 117, 69, 245;
+  --accent-secondary-rgb: 155, 101, 255;
+  --accent-tertiary-rgb: 78, 165, 255;
+
+  --accent-soft: rgba(var(--accent-rgb), 0.14);
+  --accent-soft-strong: rgba(var(--accent-rgb), 0.22);
+  --accent-ring: rgba(var(--accent-rgb), 0.18);
+  --border-accent: rgba(var(--accent-secondary-rgb), 0.44);
+  --border-accent-soft: rgba(var(--accent-secondary-rgb), 0.25);
+
+  --gradient-primary: linear-gradient(135deg, #7c4dff 0%, #6366f1 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(117, 69, 245, 0.92), rgba(99, 102, 241, 0.72));
+  --gradient-brand: linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #4ea5ff 100%);
+  --gradient-hero:
+    radial-gradient(circle at 75% 30%, rgba(139, 92, 246, 0.28), transparent 56%),
+    radial-gradient(circle at 92% 85%, rgba(78, 165, 255, 0.18), transparent 52%),
+    linear-gradient(135deg, #111834 0%, #0d1329 58%, #101530 100%);
+  --gradient-sidebar-cta:
+    radial-gradient(circle at 80% 10%, rgba(155, 101, 255, 0.25), transparent 60%),
+    linear-gradient(160deg, rgba(22, 29, 54, 0.92), rgba(14, 19, 38, 0.96));
+
+  /* Dynamic Track Accent (overridden per track/page) */
+  --track-accent: #7545f5;
+  --track-secondary: #9b65ff;
+  --track-soft: rgba(117, 69, 245, 0.14);
+  --track-border: rgba(155, 101, 255, 0.42);
+  --track-glow: rgba(117, 69, 245, 0.28);
+
+  --text-primary: #f1f5fb;
+  --text-secondary: #9ba7c4;
+  --text-muted: #6c7898;
+
+  --border-subtle: rgba(148, 163, 184, 0.1);
+  --border-soft: rgba(148, 163, 184, 0.18);
+
+  --shadow-card: 0 12px 32px rgba(3, 6, 18, 0.44);
+  --shadow-elevated: 0 20px 44px rgba(2, 5, 16, 0.56);
+  --shadow-glow-accent: 0 8px 24px rgba(var(--accent-rgb), 0.34);
+  --shadow-glow-purple: var(--shadow-glow-accent);
+
+  --sidebar-width: 244px;
+  --topbar-height: 60px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+/* Explicit Dark Palette 1: Nebula Violet */
+html[data-palette="dark-violet"] {
+  color-scheme: dark;
+}
+
+/* Dark Palette 2: GX Crimson (Opera GX inspired) */
+html[data-palette="dark-crimson"] {
+  color-scheme: dark;
+  --bg-canvas: #0c070a;
+  --bg-sidebar: #120a0e;
+  --bg-topbar: rgba(16, 9, 13, 0.88);
+  --bg-surface: #190e14;
+  --bg-surface-elevated: #22141c;
+  --bg-surface-hover: #2d1a24;
+  --bg-editor: #10080d;
+  --bg-input: #170d12;
+
+  --accent-primary: #fa1e4e;
+  --accent-secondary: #ff5c7c;
+  --accent-tertiary: #ff9466;
+  --accent-blue: #fb7185;
+
+  --accent-rgb: 250, 30, 78;
+  --accent-secondary-rgb: 255, 92, 124;
+  --accent-tertiary-rgb: 255, 148, 102;
+
+  --gradient-primary: linear-gradient(135deg, #fa1e4e 0%, #e11d48 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(250, 30, 78, 0.92), rgba(225, 29, 72, 0.72));
+  --gradient-brand: linear-gradient(135deg, #fa1e4e 0%, #ff5c7c 55%, #ff9466 100%);
+  --gradient-hero:
+    radial-gradient(circle at 76% 30%, rgba(250, 30, 78, 0.28), transparent 56%),
+    radial-gradient(circle at 92% 85%, rgba(255, 148, 102, 0.16), transparent 52%),
+    linear-gradient(135deg, #1f0e16 0%, #150a10 58%, #1c0c14 100%);
+  --gradient-sidebar-cta:
+    radial-gradient(circle at 80% 10%, rgba(250, 30, 78, 0.25), transparent 60%),
+    linear-gradient(160deg, rgba(38, 17, 27, 0.94), rgba(20, 10, 15, 0.98));
+
+  --text-primary: #faf2f4;
+  --text-secondary: #c5a7b0;
+  --text-muted: #937681;
+  --border-subtle: rgba(255, 196, 212, 0.1);
+  --border-soft: rgba(255, 196, 212, 0.19);
+}
+
+/* Dark Palette 3: Cyber Matrix */
+html[data-palette="dark-cyber"] {
+  color-scheme: dark;
+  --bg-canvas: #060d0e;
+  --bg-sidebar: #091315;
+  --bg-topbar: rgba(8, 18, 20, 0.88);
+  --bg-surface: #0d1b1e;
+  --bg-surface-elevated: #122428;
+  --bg-surface-hover: #183035;
+  --bg-editor: #071012;
+  --bg-input: #0c181b;
+
+  --accent-primary: #10b981;
+  --accent-secondary: #34d399;
+  --accent-tertiary: #22d3ee;
+  --accent-blue: #22d3ee;
+
+  --accent-rgb: 16, 185, 129;
+  --accent-secondary-rgb: 52, 211, 153;
+  --accent-tertiary-rgb: 34, 211, 238;
+
+  --gradient-primary: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(16, 185, 129, 0.92), rgba(13, 148, 136, 0.74));
+  --gradient-brand: linear-gradient(135deg, #10b981 0%, #14b8a6 55%, #22d3ee 100%);
+  --gradient-hero:
+    radial-gradient(circle at 76% 30%, rgba(16, 185, 129, 0.25), transparent 56%),
+    radial-gradient(circle at 92% 85%, rgba(34, 211, 238, 0.16), transparent 52%),
+    linear-gradient(135deg, #0c2124 0%, #081518 58%, #0c1d20 100%);
+  --gradient-sidebar-cta:
+    radial-gradient(circle at 80% 10%, rgba(52, 211, 153, 0.24), transparent 60%),
+    linear-gradient(160deg, rgba(15, 34, 38, 0.94), rgba(8, 19, 22, 0.98));
+
+  --text-primary: #eefaf8;
+  --text-secondary: #98bdb8;
+  --text-muted: #688e8a;
+  --border-subtle: rgba(153, 246, 228, 0.1);
+  --border-soft: rgba(153, 246, 228, 0.18);
+}
+
+/* Dark Palette 4: Solar Forge */
+html[data-palette="dark-amber"] {
+  color-scheme: dark;
+  --bg-canvas: #0d0a07;
+  --bg-sidebar: #14100b;
+  --bg-topbar: rgba(19, 14, 10, 0.88);
+  --bg-surface: #1c160f;
+  --bg-surface-elevated: #261e14;
+  --bg-surface-hover: #33271a;
+  --bg-editor: #100c08;
+  --bg-input: #1a140d;
+
+  --accent-primary: #d97706;
+  --accent-secondary: #fbbf24;
+  --accent-tertiary: #fb7185;
+  --accent-blue: #fb923c;
+
+  --accent-rgb: 217, 119, 6;
+  --accent-secondary-rgb: 251, 191, 36;
+  --accent-tertiary-rgb: 251, 113, 133;
+
+  --gradient-primary: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(217, 119, 6, 0.94), rgba(234, 88, 12, 0.76));
+  --gradient-brand: linear-gradient(135deg, #f59e0b 0%, #ea580c 58%, #fb7185 100%);
+  --gradient-hero:
+    radial-gradient(circle at 76% 30%, rgba(245, 158, 11, 0.25), transparent 56%),
+    radial-gradient(circle at 92% 85%, rgba(251, 113, 133, 0.14), transparent 52%),
+    linear-gradient(135deg, #24190f 0%, #16100a 58%, #1e150d 100%);
+  --gradient-sidebar-cta:
+    radial-gradient(circle at 80% 10%, rgba(251, 191, 36, 0.22), transparent 60%),
+    linear-gradient(160deg, rgba(38, 28, 18, 0.94), rgba(20, 15, 10, 0.98));
+
+  --text-primary: #faf6ef;
+  --text-secondary: #c5b6a2;
+  --text-muted: #92826e;
+  --border-subtle: rgba(253, 230, 138, 0.1);
+  --border-soft: rgba(253, 230, 138, 0.19);
+}
+
+/* Light Base + Light Palette 1: Arctic Violet */
+html.light-theme,
+html[data-palette="light-arctic"] {
+  color-scheme: light;
+  --bg-canvas: #f3f6fc;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: rgba(255, 255, 255, 0.9);
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f1f5fd;
+  --bg-surface-hover: #e7eefb;
+  --bg-editor: #f8faff;
+  --bg-input: #eef2fc;
+
+  --accent-primary: #6838eb;
+  --accent-secondary: #6838eb;
+  --accent-tertiary: #257be6;
+  --accent-blue: #257be6;
+  --accent-success: #16a34a;
+  --accent-warning: #d97706;
+  --accent-danger: #dc2626;
+
+  --accent-rgb: 104, 56, 235;
+  --accent-secondary-rgb: 126, 82, 248;
+  --accent-tertiary-rgb: 37, 123, 230;
+
+  --gradient-primary: linear-gradient(135deg, #6838eb 0%, #5b21b6 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(104, 56, 235, 0.94), rgba(99, 102, 241, 0.8));
+  --gradient-brand: linear-gradient(135deg, #6838eb 0%, #6366f1 55%, #257be6 100%);
+  --gradient-hero:
+    radial-gradient(circle at 78% 30%, rgba(139, 92, 246, 0.16), transparent 56%),
+    linear-gradient(135deg, #eef2ff 0%, #f5f3ff 65%, #e0f2fe 100%);
+  --gradient-sidebar-cta: linear-gradient(160deg, #ede9fe, #e0e7ff);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-soft: rgba(15, 23, 42, 0.15);
+  --border-accent: rgba(104, 56, 235, 0.36);
+  --border-accent-soft: rgba(104, 56, 235, 0.2);
+
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 16px 36px rgba(15, 23, 42, 0.12);
+  --shadow-glow-accent: 0 8px 20px rgba(var(--accent-rgb), 0.22);
+  --shadow-glow-purple: var(--shadow-glow-accent);
+}
+
+/* Light Palette 2: Nordic Ocean */
+html[data-palette="light-ocean"] {
+  color-scheme: light;
+  --bg-canvas: #f0f7fb;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: rgba(255, 255, 255, 0.92);
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #edf5fa;
+  --bg-surface-hover: #e0eff8;
+  --bg-editor: #f7fbfe;
+  --bg-input: #e8f3fa;
+
+  --accent-primary: #0284c7;
+  --accent-secondary: #0369a1;
+  --accent-tertiary: #0891b2;
+  --accent-blue: #0284c7;
+
+  --accent-rgb: 2, 132, 199;
+  --accent-secondary-rgb: 3, 105, 161;
+  --accent-tertiary-rgb: 8, 145, 178;
+
+  --gradient-primary: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(2, 132, 199, 0.94), rgba(8, 145, 178, 0.8));
+  --gradient-brand: linear-gradient(135deg, #0284c7 0%, #0891b2 60%, #38bdf8 100%);
+  --gradient-hero:
+    radial-gradient(circle at 78% 30%, rgba(2, 132, 199, 0.15), transparent 56%),
+    linear-gradient(135deg, #e0f2fe 0%, #ecfeff 62%, #f0f9ff 100%);
+  --gradient-sidebar-cta: linear-gradient(160deg, #e0f2fe, #cffafe);
+
+  --text-primary: #0c1b2a;
+  --text-secondary: #3b556e;
+  --text-muted: #58748f;
+  --border-subtle: rgba(12, 27, 42, 0.08);
+  --border-soft: rgba(12, 27, 42, 0.16);
+}
+
+/* Light Palette 3: Matcha Studio */
+html[data-palette="light-mint"] {
+  color-scheme: light;
+  --bg-canvas: #f1f8f5;
+  --bg-sidebar: #fbfefd;
+  --bg-topbar: rgba(251, 254, 253, 0.92);
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ecf7f1;
+  --bg-surface-hover: #dff2e8;
+  --bg-editor: #f7fcfa;
+  --bg-input: #e7f4ee;
+
+  --accent-primary: #059669;
+  --accent-secondary: #047857;
+  --accent-tertiary: #0d9488;
+  --accent-blue: #0d9488;
+
+  --accent-rgb: 5, 150, 105;
+  --accent-secondary-rgb: 4, 120, 87;
+  --accent-tertiary-rgb: 13, 148, 136;
+
+  --gradient-primary: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(5, 150, 105, 0.94), rgba(13, 148, 136, 0.8));
+  --gradient-brand: linear-gradient(135deg, #059669 0%, #0d9488 60%, #10b981 100%);
+  --gradient-hero:
+    radial-gradient(circle at 78% 30%, rgba(5, 150, 105, 0.14), transparent 56%),
+    linear-gradient(135deg, #dcfce7 0%, #ecfdf5 60%, #ccfbf1 100%);
+  --gradient-sidebar-cta: linear-gradient(160deg, #d1fae5, #ccfbf1);
+
+  --text-primary: #0c2019;
+  --text-secondary: #395b4e;
+  --text-muted: #54796a;
+  --border-subtle: rgba(12, 32, 25, 0.08);
+  --border-soft: rgba(12, 32, 25, 0.16);
+}
+
+/* Light Palette 4: Paper Sunset */
+html[data-palette="light-coral"] {
+  color-scheme: light;
+  --bg-canvas: #fbf5f2;
+  --bg-sidebar: #fffcfa;
+  --bg-topbar: rgba(255, 252, 250, 0.92);
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #fdf1ec;
+  --bg-surface-hover: #fbe3d9;
+  --bg-editor: #fffaf8;
+  --bg-input: #faece6;
+
+  --accent-primary: #e11d48;
+  --accent-secondary: #be123c;
+  --accent-tertiary: #ea580c;
+  --accent-blue: #ea580c;
+
+  --accent-rgb: 225, 29, 72;
+  --accent-secondary-rgb: 190, 18, 60;
+  --accent-tertiary-rgb: 234, 88, 12;
+
+  --gradient-primary: linear-gradient(135deg, #e11d48 0%, #ea580c 100%);
+  --gradient-nav-active: linear-gradient(90deg, rgba(225, 29, 72, 0.94), rgba(234, 88, 12, 0.8));
+  --gradient-brand: linear-gradient(135deg, #e11d48 0%, #f43f5e 55%, #ea580c 100%);
+  --gradient-hero:
+    radial-gradient(circle at 78% 30%, rgba(225, 29, 72, 0.14), transparent 56%),
+    linear-gradient(135deg, #ffe4e6 0%, #fff1f2 60%, #ffedd5 100%);
+  --gradient-sidebar-cta: linear-gradient(160deg, #ffe4e6, #ffedd5);
+
+  --text-primary: #1f1216;
+  --text-secondary: #5c4048;
+  --text-muted: #7d5b64;
+  --border-subtle: rgba(31, 18, 22, 0.08);
+  --border-soft: rgba(31, 18, 22, 0.16);
+}
+
+/* Transição suave ao trocar entre modos/paletas sem piscar */
+html.theme-transitioning,
+html.theme-transitioning .ce-shell,
+html.theme-transitioning .ce-sidebar,
+html.theme-transitioning .ce-topbar,
+html.theme-transitioning .ce-panel,
+html.theme-transitioning .ce-hero-banner,
+html.theme-transitioning .ce-surface,
+html.theme-transitioning .ce-btn {
+  transition:
+    background-color 240ms ease,
+    border-color 240ms ease,
+    color 220ms ease,
+    box-shadow 240ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning,
+  html.theme-transitioning * {
+    transition-duration: 0.01ms !important;
+  }
+}

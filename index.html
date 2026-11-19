@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070A14" />
+    <title>Code Entry — Aprenda, Pratique e Evolua em Tecnologia</title>
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem("ce.themeMode");
+          var palette = localStorage.getItem("ce.themePalette");
+          var root = document.documentElement;
+          var colors = {
+            "dark-violet": "#070a14",
+            "dark-crimson": "#0c070a",
+            "dark-cyber": "#060d0e",
+            "dark-amber": "#0d0a07",
+            "light-arctic": "#f3f6fc",
+            "light-ocean": "#f0f7fb",
+            "light-mint": "#f1f8f5",
+            "light-coral": "#fbf5f2"
+          };
+          if (palette && colors[palette]) {
+            var isLight = palette.indexOf("light-") === 0;
+            root.classList.toggle("light-theme", isLight);
+            root.dataset.palette = palette;
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute("content", colors[palette]);
+          } else if (mode === "light") {
+            root.classList.add("light-theme");
+            root.dataset.palette = "light-arctic";
+          } else {
+            root.dataset.palette = "dark-violet";
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
