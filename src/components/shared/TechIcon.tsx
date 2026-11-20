@@ -13,7 +13,7 @@ export const TechIcon: React.FC<TechIconProps> = ({ trackId, size = 28, boxed = 
   const track = TRACK_MAP[trackId];
   const content = track.iconPath ? (
     <img
-      src={track.iconPath}
+      src={`${import.meta.env.BASE_URL}${track.iconPath.replace(/^\/+/, "")}`}
       alt={`Logo ${track.name}`}
       style={{ width: size, height: size, objectFit: "contain", display: "block" }}
     />

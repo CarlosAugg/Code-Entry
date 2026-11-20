@@ -11,7 +11,7 @@ import {
   type ThemeMode,
   type ThemePaletteId,
 } from "../data/themes";
-import { api } from "../services/api";
+import { localStore } from "../services/localStore";
 import type { TrackId } from "../types/curriculum";
 import type {
   ActivityHistoryEntry,
@@ -284,7 +284,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLoading(true);
     setError(null);
     try {
-      const payload = await api.bootstrap();
+      const payload = await localStore.bootstrap();
       if (!isActive()) return;
       const resolvedTheme = payload.settings.theme === "light" ? "light" : "dark";
       const resolvedPalette = resolvePalette(resolvedTheme, payload.settings.themePalette);
@@ -376,7 +376,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        api
+        localStore
           .addStudySeconds(15, toLocalDateKey(new Date()))
           .then(res => {
             setData(prev => ({
@@ -404,7 +404,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (toUnlock.length === 0) return [];
 
       try {
-        const res = await api.unlockAchievements(toUnlock);
+        const res = await localStore.unlockAchievements(toUnlock);
         if (res.newlyUnlocked.length > 0) {
           setData(prev => {
             const updated = { ...prev, achievements: res.achievements };
@@ -438,7 +438,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
-    const res = await api.updateSettings(patch);
+    const res = await localStore.updateSettings(patch);
     setData(prev => {
       const updated = { ...prev, settings: res.settings };
       dataRef.current = updated;
@@ -588,9 +588,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const prevStats = computeStats(prevSnapshot);
       const track = TRACK_MAP[opts.trackId];
 
-      let res: Awaited<ReturnType<typeof api.recordLessonAttempt>>;
+      let res: Awaited<ReturnType<typeof localStore.recordLessonAttempt>>;
       try {
-        res = await api.recordLessonAttempt({
+        res = await localStore.recordLessonAttempt({
           lessonId: opts.lessonId,
           trackId: opts.trackId,
           completed: opts.completed,
@@ -608,7 +608,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       let historyItem: ActivityHistoryEntry | null = null;
       try {
-        const histRes = await api.addHistoryEvent({
+        const histRes = await localStore.addHistoryEvent({
           eventType: opts.completed ? "lesson_completed" : "lesson_attempt",
           trackId: opts.trackId,
           itemId: opts.lessonId,
@@ -631,7 +631,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dataRef.current = nextSnapshot;
       setData(nextSnapshot);
 
-      api
+      localStore
         .updateSettings({ activeTrackId: opts.trackId })
         .then(s => {
           setData(prev => {
@@ -691,9 +691,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const prevStats = computeStats(prevSnapshot);
       const track = TRACK_MAP[opts.trackId];
 
-      let res: Awaited<ReturnType<typeof api.recordChallengeAttempt>>;
+      let res: Awaited<ReturnType<typeof localStore.recordChallengeAttempt>>;
       try {
-        res = await api.recordChallengeAttempt({
+        res = await localStore.recordChallengeAttempt({
           challengeId: opts.challengeId,
           trackId: opts.trackId,
           completed: opts.completed,
@@ -711,7 +711,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       let historyItem: ActivityHistoryEntry | null = null;
       try {
-        const histRes = await api.addHistoryEvent({
+        const histRes = await localStore.addHistoryEvent({
           eventType: opts.completed ? "challenge_completed" : "challenge_attempt",
           trackId: opts.trackId,
           itemId: opts.challengeId,
@@ -776,7 +776,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       detail: string,
       status: "success" | "error" | "info" = "info"
     ) => {
-      const histRes = await api.addHistoryEvent({
+      const histRes = await localStore.addHistoryEvent({
         eventType: "lab_run",
         trackId,
         itemId: null,
@@ -795,7 +795,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 
   const saveDraft = useCallback(async (key: string, code: string, stdin = "") => {
-    const res = await api.saveDraft(key, code, stdin);
+    const res = await localStore.saveDraft(key, code, stdin);
     setData(prev => ({
       ...prev,
       drafts: {
@@ -806,7 +806,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const clearDraft = useCallback(async (key: string) => {
-    await api.deleteDraft(key);
+    await localStore.deleteDraft(key);
     setData(prev => {
       const next = { ...prev.drafts };
       delete next[key];
@@ -815,7 +815,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const saveWorkspace = useCallback(async (key: string, state: unknown) => {
-    await api.saveWorkspace(key, state);
+    await localStore.saveWorkspace(key, state);
     setData(prev => ({
       ...prev,
       workspaces: { ...prev.workspaces, [key]: state },
@@ -823,7 +823,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const resetProgress = useCallback(async () => {
-    const next = await api.resetAll(true);
+    const next = await localStore.resetAll(true);
     const normalized = { ...next, dailyStudyLog: next.dailyStudyLog || {} };
     dataRef.current = normalized;
     setData(normalized);
@@ -832,7 +832,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const restoreFromBackup = useCallback(
     async (payload: unknown) => {
-      const next = await api.restoreBackup(payload);
+      const next = await localStore.restoreBackup(payload);
       const normalized = { ...next, dailyStudyLog: next.dailyStudyLog || {} };
       dataRef.current = normalized;
       setData(normalized);

@@ -8,11 +8,8 @@
     "node": ">=22.5.0"
   },
   "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "dev:api": "node server/index.mjs",
-    "dev:web": "vite",
+    "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "start": "node server/index.mjs",
     "verify": "node tests/verify-all.mjs",
     "typecheck": "tsc --noEmit"
   },
@@ -34,7 +31,8 @@
     "motion": "^14.14.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.0"
+    "react-router-dom": "^7.6.0",
+    "sql.js": "1.13.0"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",

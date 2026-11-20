@@ -16,3 +16,5 @@ export { ALL_LESSONS, LESSONS_BY_TRACK } from "../data/lessons";
 export { CHALLENGES } from "../data/challenges";
 export { ACHIEVEMENTS } from "../data/achievements";
 export { TRACKS } from "../data/tracks";
+
+export { CodeEntryDatabase } from "../services/progressDatabase.mjs";

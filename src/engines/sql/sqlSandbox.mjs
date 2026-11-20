@@ -1,4 +1,14 @@
-import { DatabaseSync } from "node:sqlite";
+let SqlDatabase = null;
+
+export function setSqlDatabaseFactory(factory) {
+  if (typeof factory !== "function") throw new TypeError("Fábrica SQLite inválida.");
+  SqlDatabase = factory;
+}
+
+function createDatabase() {
+  if (!SqlDatabase) throw new Error("O mecanismo SQLite ainda não foi inicializado.");
+  return SqlDatabase();
+}
 
 const DATASETS = {
   ecommerce: {
@@ -254,7 +264,7 @@ function inspectSchema(db) {
 
 export function listDatasets() {
   return Object.values(DATASETS).map(ds => {
-    const db = new DatabaseSync(":memory:");
+    const db = createDatabase();
     try {
       db.exec(ds.seedSql);
       return {
@@ -271,7 +281,7 @@ export function listDatasets() {
 
 export function getDatasetSchema(datasetId = "ecommerce") {
   const ds = DATASETS[datasetId] || DATASETS.ecommerce;
-  const db = new DatabaseSync(":memory:");
+  const db = createDatabase();
   try {
     db.exec(ds.seedSql);
     return {
@@ -317,7 +327,7 @@ export function executeSql({ datasetId = "ecommerce", query = "", setupSql = "" 
     }
   }
 
-  const db = new DatabaseSync(":memory:");
+  const db = createDatabase();
   const startedAt = performance.now();
 
   try {

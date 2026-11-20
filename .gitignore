@@ -8,12 +8,6 @@
 *.log
 npm-debug.log*
 
-# Banco de dados local do estudante e runtime
-/data/
-*.db
-*.db-wal
-*.db-shm
-
 # Variáveis de ambiente e segredos
 .env
 .env.*
