@@ -3,6 +3,7 @@ name: Build and deploy Code Entry
 on:
   push:
     branches:
+      - main
       - "fix/**"
   pull_request:
     branches:
@@ -43,7 +44,7 @@ jobs:
           path: dist
 
   deploy:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     needs: build
     permissions:
       pages: write
