@@ -1,5 +1,5 @@
 import { executeSql, getDatasetSchema, setSqlDatabaseFactory } from "./sqlSandbox.mjs";
-import { initializeSqlJs, SqlJsDatabaseSync } from "./sqliteAdapter";
+import { createSqlJsDatabaseSync, initializeSqlJs } from "./sqliteAdapter";
 
 interface SqlRequest {
   id: number;
@@ -14,7 +14,7 @@ const workerScope = self as unknown as {
 };
 
 const ready = initializeSqlJs().then(() => {
-  setSqlDatabaseFactory(SqlJsDatabaseSync);
+  setSqlDatabaseFactory(() => createSqlJsDatabaseSync());
 });
 
 workerScope.addEventListener("message", async event => {

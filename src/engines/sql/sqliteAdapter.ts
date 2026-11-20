@@ -58,15 +58,20 @@ export class SqlJsDatabaseSync {
   }
 }
 
-let initialized: ReturnType<typeof initSqlJs> | null = null;
+let initialized: Promise<import("sql.js").SqlJsStatic> | null = null;
+let runtime: import("sql.js").SqlJsStatic | null = null;
 
 export async function initializeSqlJs(): Promise<void> {
   initialized ??= initSqlJs({ locateFile: () => wasmUrl });
-  await initialized;
+  runtime = await initialized;
+}
+
+export function createSqlJsDatabaseSync(data?: Uint8Array): SqlJsDatabaseSync {
+  if (!runtime) throw new Error("O mecanismo SQLite ainda não foi inicializado.");
+  return new SqlJsDatabaseSync(new runtime.Database(data));
 }
 
 export async function createSqlJsDatabase(data?: Uint8Array): Promise<SqlJsDatabaseSync> {
-  initialized ??= initSqlJs({ locateFile: () => wasmUrl });
-  const SQL = await initialized;
-  return new SqlJsDatabaseSync(new SQL.Database(data));
+  await initializeSqlJs();
+  return createSqlJsDatabaseSync(data);
 }

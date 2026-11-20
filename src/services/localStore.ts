@@ -1,5 +1,3 @@
-import initSqlJs from "sql.js";
-import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import type {
   ActivityHistoryEntry,
   BootstrapPayload,
@@ -8,21 +6,16 @@ import type {
   UserSettings,
 } from "../types/progress";
 import { CodeEntryDatabase } from "./progressDatabase.mjs";
-import { SqlJsDatabaseSync } from "../engines/sql/sqliteAdapter";
+import { createSqlJsDatabaseSync, initializeSqlJs, SqlJsDatabaseSync } from "../engines/sql/sqliteAdapter";
 
 const STORAGE_DB_NAME = "code-entry-local";
 const STORAGE_DB_VERSION = 1;
 const STORAGE_STORE_NAME = "sqlite";
 const STORAGE_KEY = "progress-v4";
 
-interface SqlJsApi {
-  Database: new (data?: Uint8Array) => ConstructorParameters<typeof SqlJsDatabaseSync>[0];
-}
-
 interface StoreHandle {
   sqlite: SqlJsDatabaseSync;
   database: CodeEntryDatabase;
-  sql: SqlJsApi;
 }
 
 let activeHandle: StoreHandle | null = null;
@@ -72,10 +65,10 @@ async function writeStoredBytes(bytes: Uint8Array): Promise<void> {
 async function initializeStore(): Promise<StoreHandle> {
   if (activeHandle) return activeHandle;
   const storedBytes = await readStoredBytes();
-  const sql = await initSqlJs({ locateFile: () => wasmUrl }) as unknown as SqlJsApi;
-  const sqlite = new SqlJsDatabaseSync(new sql.Database(storedBytes));
+  await initializeSqlJs();
+  const sqlite = createSqlJsDatabaseSync(storedBytes);
   const database = new CodeEntryDatabase(sqlite);
-  const handle = { sqlite, database, sql };
+  const handle = { sqlite, database };
   activeHandle = handle;
   if (!storedBytes) await writeStoredBytes(sqlite.export());
   return handle;
@@ -92,7 +85,7 @@ function run<T>(operation: (database: CodeEntryDatabase) => T, persist = false):
     } catch (error) {
       if (checkpoint) {
         handle.sqlite.close();
-        const sqlite = new SqlJsDatabaseSync(new handle.sql.Database(checkpoint));
+        const sqlite = createSqlJsDatabaseSync(checkpoint);
         handle.sqlite = sqlite;
         handle.database = new CodeEntryDatabase(sqlite);
       }

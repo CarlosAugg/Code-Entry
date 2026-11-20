@@ -262,7 +262,7 @@ const {
 
 // 3. Verifica SQL Sandbox
 {
-  setSqlDatabaseFactory(DatabaseSync);
+  setSqlDatabaseFactory(() => new DatabaseSync(":memory:"));
   const datasets = listDatasets();
   assert.equal(datasets.length, 2);
   assert.equal(getDatasetSchema("ecommerce").tables.length, 4);

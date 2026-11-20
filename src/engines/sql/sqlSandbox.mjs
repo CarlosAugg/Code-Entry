@@ -7,7 +7,7 @@ export function setSqlDatabaseFactory(factory) {
 
 function createDatabase() {
   if (!SqlDatabase) throw new Error("O mecanismo SQLite ainda não foi inicializado.");
-  return new SqlDatabase();
+  return SqlDatabase();
 }
 
 const DATASETS = {
