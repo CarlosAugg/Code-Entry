@@ -1,14 +1,12 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
-import { CodeEntryDatabase } from "../server/db.mjs";
-import { createServer, listenWithFallback } from "../server/index.mjs";
-import { executeSql, getDatasetSchema, listDatasets } from "../server/sqlSandbox.mjs";
+import { CodeEntryDatabase } from "../src/services/progressDatabase.mjs";
+import { executeSql, getDatasetSchema, listDatasets, setSqlDatabaseFactory } from "../src/engines/sql/sqlSandbox.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, "..");
@@ -50,7 +48,7 @@ const {
 
 // 2. Verifica banco SQLite (CodeEntryDatabase) + Migração e Meta Diária
 {
-  const db = new CodeEntryDatabase(":memory:");
+  const db = new CodeEntryDatabase(new DatabaseSync(":memory:"));
   const init = db.getBootstrap();
   assert.equal(init.settings.displayName, "Estudante");
   assert.equal(init.settings.theme, "dark");
@@ -238,7 +236,7 @@ const {
     `);
     raw.close();
 
-    const migrated = new CodeEntryDatabase(legacyDbPath);
+    const migrated = new CodeEntryDatabase(new DatabaseSync(legacyDbPath));
     const boot = migrated.getBootstrap();
     assert.equal(boot.settings.displayName, "Veterano");
     assert.equal(boot.settings.theme, "light");
@@ -262,39 +260,9 @@ const {
   }
 }
 
-// 2c. Verifica /api/health e resolução dinâmica de porta quando porta preferencial está ocupada
-{
-  const blocker = http.createServer((_req, res) => {
-    res.writeHead(200);
-    res.end("occupied");
-  });
-  await new Promise(resolve => blocker.listen(0, "127.0.0.1", resolve));
-  const occupiedPort = blocker.address().port;
-
-  const { server } = createServer({ port: occupiedPort, dbPath: ":memory:" });
-  try {
-    const resolvedPort = await listenWithFallback(server, {
-      host: "127.0.0.1",
-      preferredPort: occupiedPort,
-      strictPort: false,
-      maxAttempts: 20,
-    });
-    assert.notEqual(resolvedPort, occupiedPort, "Deve migrar para outra porta livre quando ocupada");
-
-    const healthRes = await fetch(`http://127.0.0.1:${resolvedPort}/api/health`);
-    assert.equal(healthRes.status, 200);
-    const healthJson = await healthRes.json();
-    assert.equal(healthJson.ok, true);
-    assert.equal(healthJson.service, "code-entry-api");
-    pass("Servidor HTTP: endpoint /api/health e fallback automático de porta livre");
-  } finally {
-    await new Promise(resolve => server.close(resolve));
-    await new Promise(resolve => blocker.close(resolve));
-  }
-}
-
 // 3. Verifica SQL Sandbox
 {
+  setSqlDatabaseFactory(DatabaseSync);
   const datasets = listDatasets();
   assert.equal(datasets.length, 2);
   assert.equal(getDatasetSchema("ecommerce").tables.length, 4);

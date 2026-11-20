@@ -1,9 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
-
-const DEFAULT_DB_PATH = path.resolve(process.cwd(), "data", "code-entry.db");
-
 const VALID_PALETTES = new Set([
   "dark-violet",
   "dark-crimson",
@@ -20,18 +14,14 @@ function getPaletteMode(paletteId) {
 }
 
 export class CodeEntryDatabase {
-  constructor(dbPath = DEFAULT_DB_PATH) {
-    this.dbPath = dbPath;
-    if (dbPath !== ":memory:") {
-      fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-    }
-    this.db = new DatabaseSync(dbPath);
+  constructor(db) {
+    if (!db) throw new Error("Uma conexão SQLite local é obrigatória.");
+    this.db = db;
     this.initSchema();
   }
 
   initSchema() {
     this.db.exec(`
-      PRAGMA journal_mode = WAL;
       PRAGMA foreign_keys = ON;
 
       CREATE TABLE IF NOT EXISTS schema_meta (

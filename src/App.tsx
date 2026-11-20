@@ -16,7 +16,7 @@ import { RoadmapsPage } from "./pages/RoadmapsPage";
 export const App: React.FC = () => {
   return (
     <PlatformProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />

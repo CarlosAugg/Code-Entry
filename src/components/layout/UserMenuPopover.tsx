@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Check, Compass, Download, RotateCcw, Sparkles, Upload, User } from "lucide-react";
 import { usePlatform } from "../../context/PlatformContext";
-import { api } from "../../services/api";
+import { localStore } from "../../services/localStore";
 import { ThemePalettePicker } from "../shared/ThemePalettePicker";
 
 interface UserMenuPopoverProps {
@@ -35,7 +35,7 @@ export const UserMenuPopover: React.FC<UserMenuPopoverProps> = ({ onClose }) => 
   const quickGoals = [15, 30, 45, 60, 90];
 
   const handleExport = async () => {
-    const backup = await api.exportBackup();
+    const backup = await localStore.exportBackup();
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
