@@ -376,7 +376,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        api
+        localStore
           .addStudySeconds(15, toLocalDateKey(new Date()))
           .then(res => {
             setData(prev => ({
@@ -631,7 +631,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       dataRef.current = nextSnapshot;
       setData(nextSnapshot);
 
-      api
+      localStore
         .updateSettings({ activeTrackId: opts.trackId })
         .then(s => {
           setData(prev => {
