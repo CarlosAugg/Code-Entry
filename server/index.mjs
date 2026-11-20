@@ -155,7 +155,7 @@ if (isMain) {
   const { server } = createServer({ port: preferredPort, dbPath });
 
   listenWithFallback(server, {
-    host: "127.0.0.1",
+    host: process.env.HOST || "127.0.0.1",
     preferredPort,
     strictPort: hasExplicitPort || isApiOnly,
   })
