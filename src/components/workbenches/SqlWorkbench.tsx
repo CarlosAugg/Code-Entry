@@ -103,7 +103,7 @@ export const SqlWorkbench: React.FC<SqlWorkbenchProps> = ({
               onClick={() => onChangeCode(starterCode)}
             >
               <RotateCcw size={13} />
-              <span>Modelo</span>
+              <span>Formatar</span>
             </button>
           )}
           <button

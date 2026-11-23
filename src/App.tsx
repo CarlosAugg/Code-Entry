@@ -12,6 +12,9 @@ import { LabsPage } from "./pages/LabsPage";
 import { AchievementsPage } from "./pages/AchievementsPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { RoadmapsPage } from "./pages/RoadmapsPage";
+import { RoadmapDetailPage } from "./pages/RoadmapDetailPage";
+import { ProjectsPage } from "./pages/ProjectsPage";
+import { CoursesPage } from "./pages/CoursesPage";
 
 export const App: React.FC = () => {
   return (
@@ -24,6 +27,9 @@ export const App: React.FC = () => {
             <Route path="/trilhas/:trackId" element={<TrackDetailPage />} />
             <Route path="/trilhas/:trackId/aula/:lessonId" element={<LessonPage />} />
             <Route path="/roadmaps" element={<RoadmapsPage />} />
+            <Route path="/roadmaps/:roadmapId" element={<RoadmapDetailPage />} />
+            <Route path="/projetos" element={<ProjectsPage />} />
+            <Route path="/plano-de-estudos" element={<CoursesPage />} />
             <Route path="/desafios" element={<ChallengesPage />} />
             <Route path="/desafios/:challengeId" element={<ChallengeDetailPage />} />
             <Route path="/laboratorios" element={<LabsPage />} />

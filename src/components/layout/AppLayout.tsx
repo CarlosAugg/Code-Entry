@@ -1,23 +1,63 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { AlertCircle, Award, Info, RefreshCw, X } from "lucide-react";
+import { AlertCircle, Award, Download, Info, RefreshCw, RotateCcw, Upload, X } from "lucide-react";
 import { usePlatform } from "../../context/PlatformContext";
+import { AmbientAurora } from "../motion/AmbientAurora";
 import { ClickSpark } from "../motion/ClickSpark";
 import { InteractiveBackground } from "../motion/InteractiveBackground";
 import { PersonalizationModal } from "../onboarding/PersonalizationModal";
 import { ProductTour } from "../onboarding/ProductTour";
 import { CompletionCelebration } from "../shared/CompletionCelebration";
+import { LiaAmbientCameos } from "../shared/LiaAmbientCameos";
 import { DashboardSkeleton } from "../shared/Skeleton";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { ReferenceModal } from "./ReferenceModal";
 import { Sidebar } from "./Sidebar";
+import { ThemeDock } from "./ThemeDock";
 import { Topbar } from "./Topbar";
 
 export const AppLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { data, loading, error, retryBootstrap, sidebarCollapsed, toasts, dismissToast } = usePlatform();
+  const [confirmStorageReset, setConfirmStorageReset] = useState(false);
+  const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  const recoveryFileRef = useRef<HTMLInputElement>(null);
+  const {
+    data,
+    loading,
+    error,
+    storageError,
+    resetEpoch,
+    retryBootstrap,
+    downloadRawRecoveryCopy,
+    restoreFromBackup,
+    resetProgress,
+    personalizationOpen,
+    tourOpen,
+    sidebarCollapsed,
+    toasts,
+    dismissToast,
+  } = usePlatform();
   const location = useLocation();
+
+  if (personalizationOpen && !error) {
+    return (
+      <MotionConfig reducedMotion={data.settings.reducedMotion ? "always" : "user"}>
+        <ClickSpark paletteId={data.settings.themePalette} />
+        <PersonalizationModal />
+      </MotionConfig>
+    );
+  }
+
+  if (loading && !error && !data.settings.profileSetupCompleted) {
+    return (
+      <MotionConfig reducedMotion={data.settings.reducedMotion ? "always" : "user"}>
+        <div className="ce-welcome-screen" aria-busy="true" aria-label="Carregando Code Entry">
+          <AmbientAurora speed={0.5} />
+        </div>
+      </MotionConfig>
+    );
+  }
 
   return (
     <MotionConfig reducedMotion={data.settings.reducedMotion ? "always" : "user"}>
@@ -37,12 +77,12 @@ export const AppLayout: React.FC = () => {
               <div
                 className="ce-panel"
                 style={{
-                  maxWidth: 560,
+                  maxWidth: 620,
                   margin: "36px auto",
                   padding: 24,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 12,
+                  gap: 14,
                   borderColor: "rgba(248, 113, 113, 0.35)",
                 }}
                 role="alert"
@@ -51,22 +91,140 @@ export const AppLayout: React.FC = () => {
                   <AlertCircle size={20} style={{ color: "var(--accent-danger)", flexShrink: 0 }} />
                   <strong style={{ fontSize: 16 }}>Não foi possível carregar seus dados salvos</strong>
                 </div>
-                <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: 0 }}>{error}</p>
-                <div>
-                  <button type="button" className="ce-btn ce-btn-primary ce-btn-sm" onClick={retryBootstrap}>
+                <p style={{ fontSize: 13.5, color: "var(--text-secondary)", margin: 0, lineHeight: 1.55 }}>
+                  {storageError?.message || error}
+                </p>
+                {storageError?.canDownloadRawBackup && (
+                  <p style={{ fontSize: 12.5, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
+                    Seus registros não foram descartados automaticamente. Você pode baixar uma cópia preservada do arquivo local, importar um backup `.json` ou, se preferir, escolher o reset explícito para começar do zero.
+                  </p>
+                )}
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <button
+                    type="button"
+                    className="ce-btn ce-btn-primary ce-btn-sm"
+                    onClick={() => {
+                      setConfirmStorageReset(false);
+                      setRecoveryNotice(null);
+                      retryBootstrap();
+                    }}
+                  >
                     <RefreshCw size={14} />
                     <span>Tentar novamente</span>
                   </button>
+
+                  {storageError?.canDownloadRawBackup && (
+                    <button
+                      type="button"
+                      className="ce-btn ce-btn-ghost ce-btn-sm"
+                      onClick={async () => {
+                        const ok = await downloadRawRecoveryCopy();
+                        setRecoveryNotice(
+                          ok
+                            ? "Cópia preservada (.sqlite) baixada para este dispositivo."
+                            : "Nenhuma cópia binária disponível para download."
+                        );
+                      }}
+                    >
+                      <Download size={14} />
+                      <span>Baixar cópia preservada (.sqlite)</span>
+                    </button>
+                  )}
+
+                  {storageError?.canImportJson && (
+                    <>
+                      <button
+                        type="button"
+                        className="ce-btn ce-btn-ghost ce-btn-sm"
+                        onClick={() => recoveryFileRef.current?.click()}
+                      >
+                        <Upload size={14} />
+                        <span>Importar backup (.json)</span>
+                      </button>
+                      <input
+                        ref={recoveryFileRef}
+                        type="file"
+                        accept="application/json"
+                        hidden
+                        onChange={async e => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const parsed = JSON.parse(await file.text());
+                            await restoreFromBackup(parsed);
+                            setConfirmStorageReset(false);
+                            setRecoveryNotice(null);
+                          } catch (err) {
+                            setRecoveryNotice(
+                              err instanceof Error ? err.message : "Erro ao importar backup JSON."
+                            );
+                          } finally {
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    </>
+                  )}
                 </div>
+
+                {storageError?.canResetLocal && (
+                  <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 12 }}>
+                    {!confirmStorageReset ? (
+                      <button
+                        type="button"
+                        className="ce-btn ce-btn-ghost ce-btn-sm"
+                        style={{ color: "var(--accent-danger)" }}
+                        onClick={() => setConfirmStorageReset(true)}
+                      >
+                        <RotateCcw size={14} />
+                        <span>Resetar dados locais (começar do zero)</span>
+                      </button>
+                    ) : (
+                      <div className="ce-reset-confirm-box" role="alertdialog" aria-label="Confirmar limpeza após erro">
+                        <span style={{ fontSize: 12.5, lineHeight: 1.45 }}>
+                          Confirmar a remoção completa dos dados locais do Code Entry neste navegador? Outros sites não serão afetados.
+                        </span>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            type="button"
+                            className="ce-btn ce-btn-sm ce-btn-danger"
+                            onClick={async () => {
+                              await resetProgress();
+                              setConfirmStorageReset(false);
+                              setRecoveryNotice(null);
+                            }}
+                          >
+                            Sim, apagar dados do Code Entry e recomeçar
+                          </button>
+                          <button
+                            type="button"
+                            className="ce-btn ce-btn-ghost ce-btn-sm"
+                            onClick={() => setConfirmStorageReset(false)}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {recoveryNotice && (
+                  <div style={{ fontSize: 12.5, color: "var(--accent-secondary)" }}>{recoveryNotice}</div>
+                )}
               </div>
             ) : loading ? (
               <DashboardSkeleton />
             ) : (
               <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 6 }}
+                key={`${resetEpoch}:${location.pathname}`}
+                initial={{ opacity: 0, y: tourOpen ? 14 : 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                transition={{
+                  duration: tourOpen ? 1.04 : 0.22,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
               >
                 <Outlet />
               </motion.div>
@@ -76,8 +234,10 @@ export const AppLayout: React.FC = () => {
 
         <MobileBottomNav onOpenDrawer={() => setMobileOpen(true)} />
         <ReferenceModal />
+        <ThemeDock />
         <PersonalizationModal />
         <ProductTour />
+        <LiaAmbientCameos />
         <CompletionCelebration />
 
         <div className="ce-toast-stack" aria-live="polite">

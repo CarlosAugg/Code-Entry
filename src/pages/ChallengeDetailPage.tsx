@@ -7,13 +7,14 @@ import { usePlatform } from "../context/PlatformContext";
 import type { EvaluationContext } from "../types/curriculum";
 import { TechIcon } from "../components/shared/TechIcon";
 import { CodeWorkbench } from "../components/workbenches/CodeWorkbench";
+import { WebWorkbench } from "../components/workbenches/WebWorkbench";
 import { LinuxWorkbench } from "../components/workbenches/LinuxWorkbench";
 import { SqlWorkbench } from "../components/workbenches/SqlWorkbench";
 import { NetworkWorkbench } from "../components/workbenches/NetworkWorkbench";
 
 export const ChallengeDetailPage: React.FC = () => {
   const { challengeId } = useParams<{ challengeId: string }>();
-  const { data, recordChallengeResult, saveDraft, saveWorkspace } = usePlatform();
+  const { data, resetEpoch, recordChallengeResult, saveDraft, saveWorkspace } = usePlatform();
 
   const challenge = (challengeId && CHALLENGE_MAP[challengeId]) || CHALLENGES[0];
   const track = TRACK_MAP[challenge.trackId];
@@ -26,22 +27,69 @@ export const ChallengeDetailPage: React.FC = () => {
   const [hintLevel, setHintLevel] = useState(0);
   const [doneObjectives, setDoneObjectives] = useState<string[]>([]);
   const [mobilePane, setMobilePane] = useState<"content" | "workbench">("content");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
+    savedDraft ? "saved" : "idle"
+  );
+  const [saveError, setSaveError] = useState<string | null>(null);
   const draftTimer = useRef<number | null>(null);
+  const pendingDraftRef = useRef<{ key: string; code: string; stdin: string } | null>(null);
+  const saveDraftRef = useRef(saveDraft);
+  saveDraftRef.current = saveDraft;
+  const mountedEpochRef = useRef(resetEpoch);
+  const resetEpochRef = useRef(resetEpoch);
+  resetEpochRef.current = resetEpoch;
+
+  const flushPendingDraft = () => {
+    if (draftTimer.current) {
+      window.clearTimeout(draftTimer.current);
+      draftTimer.current = null;
+    }
+    const pending = pendingDraftRef.current;
+    pendingDraftRef.current = null;
+    if (resetEpochRef.current !== mountedEpochRef.current) return;
+    if (pending) {
+      saveDraftRef.current(pending.key, pending.code, pending.stdin).catch(() => {});
+    }
+  };
 
   useEffect(() => {
+    flushPendingDraft();
     const nextDraft = data.drafts[`challenge:${challenge.id}`];
     setCode(nextDraft?.code ?? challenge.starterCode);
     setStdin(nextDraft?.stdin ?? challenge.defaultStdin ?? "");
     setHintLevel(0);
     setDoneObjectives([]);
     setMobilePane("content");
+    setSaveStatus(nextDraft ? "saved" : "idle");
+    setSaveError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge.id]);
 
+  useEffect(() => {
+    return () => {
+      flushPendingDraft();
+    };
+  }, []);
+
   const scheduleDraftSave = (nextCode: string, nextStdin: string) => {
+    setSaveStatus("saving");
+    setSaveError(null);
+    pendingDraftRef.current = { key: draftKey, code: nextCode, stdin: nextStdin };
     if (draftTimer.current) window.clearTimeout(draftTimer.current);
     draftTimer.current = window.setTimeout(() => {
-      saveDraft(draftKey, nextCode, nextStdin).catch(() => {});
+      const payload = pendingDraftRef.current;
+      pendingDraftRef.current = null;
+      draftTimer.current = null;
+      if (!payload) return;
+      saveDraftRef
+        .current(payload.key, payload.code, payload.stdin)
+        .then(() => {
+          setSaveStatus("saved");
+        })
+        .catch(err => {
+          setSaveStatus("error");
+          setSaveError(err instanceof Error ? err.message : "Erro ao salvar rascunho localmente.");
+        });
     }, 650);
   };
 
@@ -137,7 +185,9 @@ export const ChallengeDetailPage: React.FC = () => {
         </button>
       </div>
 
-      <div className="ce-lesson-split">
+      <div
+        className={`ce-lesson-split ${challenge.workbench === "web" ? "is-web-layout" : ""}`}
+      >
         <section className={`ce-pedagogy-panel ${mobilePane === "workbench" ? "is-mobile-hidden" : ""}`}>
           <div className="ce-pedagogy-body">
             <div>
@@ -250,6 +300,24 @@ export const ChallengeDetailPage: React.FC = () => {
               mode={challenge.networkMode || "subnet"}
               preset={challenge.networkPreset}
               onEvaluate={handleEvaluate}
+            />
+          )}
+
+          {challenge.workbench === "web" && (
+            <WebWorkbench
+              projectKey={`challenge:${challenge.id}`}
+              value={code}
+              starterValue={challenge.starterCode}
+              inspection={challenge.webInspection}
+              saveStatus={saveStatus}
+              saveError={saveError}
+              onChangeValue={next => {
+                setCode(next);
+                scheduleDraftSave(next, "");
+              }}
+              onEvaluate={handleEvaluate}
+              accentColor={track.accentColor}
+              darkTextOnAccent={track.darkTextOnAccent}
             />
           )}
         </div>

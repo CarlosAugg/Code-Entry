@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { FlaskConical, Home, Layers, Menu, Swords } from "lucide-react";
+import { FolderKanban, Home, Layers, Map as MapIcon, Menu } from "lucide-react";
 
 interface MobileBottomNavProps {
   onOpenDrawer: () => void;
@@ -17,13 +17,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenDrawer }
         <Layers size={18} aria-hidden="true" />
         <span>Trilhas</span>
       </NavLink>
-      <NavLink to="/desafios" data-tour="mobile-nav-challenges" className={({ isActive }) => `ce-mobile-tab ${isActive ? "is-active" : ""}`}>
-        <Swords size={18} aria-hidden="true" />
-        <span>Desafios</span>
+      <NavLink to="/roadmaps" data-tour="mobile-nav-roadmaps" className={({ isActive }) => `ce-mobile-tab ${isActive ? "is-active" : ""}`}>
+        <MapIcon size={18} aria-hidden="true" />
+        <span>Roadmaps</span>
       </NavLink>
-      <NavLink to="/laboratorios" data-tour="mobile-nav-labs" className={({ isActive }) => `ce-mobile-tab ${isActive ? "is-active" : ""}`}>
-        <FlaskConical size={18} aria-hidden="true" />
-        <span>Labs</span>
+      <NavLink to="/projetos" data-tour="mobile-nav-projects" className={({ isActive }) => `ce-mobile-tab ${isActive ? "is-active" : ""}`}>
+        <FolderKanban size={18} aria-hidden="true" />
+        <span>Projetos</span>
       </NavLink>
       <button type="button" className="ce-mobile-tab" onClick={onOpenDrawer} aria-label="Mais páginas e menu">
         <Menu size={18} aria-hidden="true" />

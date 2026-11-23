@@ -2,6 +2,7 @@ import type { Lesson, TrackId } from "../../types/curriculum";
 import { LOGIC_LESSONS } from "./logic";
 import { CPP_LESSONS } from "./cpp";
 import { JS_LESSONS } from "./js";
+import { WEB_LESSONS } from "./web";
 import { PYTHON_LESSONS } from "./python";
 import { LINUX_LESSONS } from "./linux";
 import { NETWORK_LESSONS } from "./networks";
@@ -11,6 +12,7 @@ export const ALL_LESSONS: Lesson[] = [
   ...LOGIC_LESSONS,
   ...CPP_LESSONS,
   ...JS_LESSONS,
+  ...WEB_LESSONS,
   ...PYTHON_LESSONS,
   ...LINUX_LESSONS,
   ...NETWORK_LESSONS,
@@ -21,6 +23,7 @@ export const LESSONS_BY_TRACK: Record<TrackId, Lesson[]> = {
   logic: LOGIC_LESSONS,
   cpp: CPP_LESSONS,
   js: JS_LESSONS,
+  web: WEB_LESSONS,
   python: PYTHON_LESSONS,
   linux: LINUX_LESSONS,
   networks: NETWORK_LESSONS,

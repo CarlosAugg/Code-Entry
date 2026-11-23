@@ -42,3 +42,17 @@ Para migrar dados do antigo aplicativo local, abra a versão antiga enquanto ela
 ## SQL
 
 A bancada SQL usa SQLite compilado para WebAssembly no navegador. Os datasets didáticos E-commerce TechStore e Corporação NexusRH são recriados para cada execução, preservando o comportamento atual do sandbox em memória. As demais preferências, rascunhos, progresso, atividades e workspaces persistem localmente.
+
+
+## Evolução futura (backlog)
+
+Itens mapeados para próximas rodadas de evolução do produto, em ordem orientativa para revisão:
+
+- **Introdução narrativa interativa na entrada** (*Prioridade média*): substituir o resumo estático de boas-vindas por uma abertura visual opcional com cenas e exemplos vivos que demonstrem o Code Entry executando código e simulações diretamente no navegador.
+- **Favoritar Trilhas no catálogo e no Início** (*Prioridade média*): permitir que o estudante fixe trilhas de interesse para retomá-las rapidamente no Início e filtrá-las em `/trilhas`, aproveitando o mesmo padrão já usado em Roadmaps salvos.
+- **Retorno contextual explícito entre Aulas e Roadmaps** (*Prioridade média*): mostrar uma referência clara de retorno (ex.: voltar para a aula de origem) ao abrir um tópico do Roadmap a partir de uma lição, reduzindo a desorientação na navegação cruzada.
+- **Redesenho do catálogo de Desafios** (*Prioridade média*): organizar a arena independente com curadoria por tema/objetivo e progressão mais clara em relação às aulas guiadas e aos projetos integradores.
+- **Evolução visual e de feedback do Laboratório de Redes** (*Prioridade baixa/média*): aprimorar a legibilidade visual da bancada e investigar o relato de comandos rápidos que parecem desaparecer antes de deixar a resposta clara no console de diagnóstico.
+- **Paginação do Histórico** (*Prioridade baixa*): dividir o histórico de atividades em blocos menores (como 10 registros por página) para facilitar a leitura em uso prolongado, considerando que o bootstrap atual já limita a carga exibida a 250 eventos recentes.
+- **Canvas com pan e zoom livre nos Roadmaps** (*Prioridade baixa*): avaliar a adoção de mapa arrastável caso futuros roadmaps cresçam para dezenas de nós e ramificações que excedam o formato atual em etapas.
+- **Polimentos visuais secundários** (*Prioridade baixa*): ajustar o alinhamento do 8º botão no seletor de Laboratórios, evitar duplicação entre área e título no breadcrumb do Roadmap e melhorar o desvio das conexões SVG ao cruzar títulos de etapa.

@@ -60,15 +60,15 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: "ach-all-tracks-started",
     title: "Visão 360° em Tecnologia",
-    description: "Inicie e conclua ao menos 1 atividade em todas as 7 trilhas.",
+    description: "Inicie e conclua ao menos 1 atividade em todas as 8 trilhas.",
     category: "Geral",
     xpBonus: 220,
     iconName: "Sparkles",
     accentColor: "#14B8A6",
     evaluate: stats => ({
-      unlocked: stats.startedTracks.length >= 7,
-      current: Math.min(7, stats.startedTracks.length),
-      target: 7,
+      unlocked: stats.startedTracks.length >= 8,
+      current: Math.min(8, stats.startedTracks.length),
+      target: 8,
     }),
   },
   {
@@ -170,6 +170,20 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     }),
   },
   {
+    id: "ach-web-master",
+    title: "Construtor Web",
+    description: "Conclua todas as 8 aulas da trilha de Desenvolvimento Web.",
+    category: "Trilhas",
+    xpBonus: 200,
+    iconName: "Globe",
+    accentColor: "#F97316",
+    evaluate: stats => ({
+      unlocked: stats.perTrack.web.completedLessons >= stats.perTrack.web.totalLessons,
+      current: stats.perTrack.web.completedLessons,
+      target: stats.perTrack.web.totalLessons,
+    }),
+  },
+  {
     id: "ach-linux-master",
     title: "Administrador Linux",
     description: "Conclua todas as 8 aulas da trilha de Linux.",
@@ -256,7 +270,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: "ach-completionist",
     title: "Domínio Completo Code Entry",
-    description: "Finalize todas as 58 aulas e 21 desafios da plataforma.",
+    description: "Finalize todas as 66 aulas e 24 desafios da plataforma.",
     category: "Geral",
     xpBonus: 500,
     iconName: "Crown",

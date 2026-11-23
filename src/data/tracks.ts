@@ -3,7 +3,7 @@ import type { TrackId, TrackMeta } from "../types/curriculum";
 export const TRACKS: TrackMeta[] = [
   {
     id: "logic",
-    name: "Lógica",
+    name: "Lógica de Programação",
     shortName: "Lógica",
     category: "Programação",
     level: "Ponto de partida (Zero ao Algoritmo)",
@@ -17,7 +17,7 @@ export const TRACKS: TrackMeta[] = [
     accentGlow: "rgba(99, 102, 241, 0.28)",
     workbench: "code",
     prerequisites: ["Nenhum pré-requisito — ideal para começar do zero"],
-    recommendedNext: ["js", "python", "cpp"],
+    recommendedNext: ["js", "web", "python", "cpp"],
     outcomes: [
       "Modelar problemas em passos lógicos claros",
       "Combinar operadores booleanos (e, ou, nao) e condicionais",
@@ -68,12 +68,37 @@ export const TRACKS: TrackMeta[] = [
     darkTextOnAccent: true,
     workbench: "code",
     prerequisites: ["Lógica de Programação (recomendado)"],
-    recommendedNext: ["database", "linux"],
+    recommendedNext: ["web", "database", "linux"],
     outcomes: [
       "Escrever código moderno com const, let e template strings",
       "Manipular objetos e arrays com desestruturação",
       "Criar arrow functions e pipelines funcionais",
       "Validar regras de negócio com testes automáticos",
+    ],
+  },
+  {
+    id: "web",
+    name: "Desenvolvimento Web",
+    shortName: "Web",
+    category: "Programação",
+    level: "HTML, CSS e JS na Prática",
+    tagline: "HTML semântico, CSS responsivo e DOM interativo ao vivo.",
+    description:
+      "Construa páginas reais combinando estrutura semântica em HTML5, estilização e responsividade com CSS3 e interatividade no navegador com JavaScript, DOM e eventos.",
+    iconPath: "/icons/tech/web.svg",
+    accentColor: "#F97316",
+    accentSecondary: "#FB923C",
+    accentSoft: "rgba(249, 115, 22, 0.14)",
+    accentBorder: "rgba(249, 115, 22, 0.44)",
+    accentGlow: "rgba(249, 115, 22, 0.28)",
+    workbench: "web",
+    prerequisites: ["Nenhum pré-requisito obrigatório — Lógica ou JavaScript ajudam na parte interativa"],
+    recommendedNext: ["js", "database", "networks"],
+    outcomes: [
+      "Estruturar documentos HTML5 semânticos e acessíveis",
+      "Estilizar interfaces com CSS, Box Model, Flexbox e Grid responsivo",
+      "Selecionar e atualizar elementos da página com JavaScript e DOM",
+      "Integrar index.html, style.css e script.js em páginas interativas",
     ],
   },
   {

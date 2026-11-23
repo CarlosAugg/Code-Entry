@@ -1,140 +1,91 @@
-export type TourInteractionMode = "info" | "click-target" | "navigate";
+import type { LiaExpression, LiaPointing } from "../types/theater";
 
 export interface OnboardingStep {
   id: string;
-  badge: string;
-  title: string;
-  description: string;
-  tip: string;
-  actionPrompt?: string;
-  interactionMode: TourInteractionMode;
   route: string;
-  routePattern?: RegExp;
-  advanceOnRoutePattern?: RegExp;
+  speech: string;
   targetSelectors?: string[];
+  navSelectors?: string[];
+  transitionLabel?: string;
   preferredSide?: "bottom" | "top" | "right" | "left";
+  openThemeDock?: boolean;
+  liaExpression: LiaExpression;
+  liaPointing: LiaPointing;
+  ctaLabel?: string;
 }
 
-export function getOnboardingSteps(displayName = "Estudante"): OnboardingStep[] {
-  const name = displayName.trim() || "Estudante";
+export function getOnboardingSteps(): OnboardingStep[] {
   return [
     {
-      id: "welcome",
-      badge: "Boas-vindas · 1 de 8",
-      title: `Bem-vindo(a) ao Code Entry, ${name}!`,
-      description:
-        "Vamos fazer um tour rápido e interativo. Em vez de apenas trocar telas sozinho, vou destacar cada área para você clicar e explorar na prática.",
-      tip: "Seu progresso, temas e conquistas ficam salvos automaticamente neste computador.",
-      interactionMode: "info",
+      id: "home-welcome",
       route: "/",
-      targetSelectors: undefined,
+      targetSelectors: ['[data-tour="dashboard-hero"]'],
+      navSelectors: ['[data-tour="nav-home"]'],
+      preferredSide: "bottom",
+      liaExpression: "wink",
+      liaPointing: "up",
+      speech:
+        "Oi! Eu sou a Lia. Aqui no Início você retoma sua aula em um clique e acompanha sua jornada ali à direita.",
     },
     {
-      id: "dashboard-journey",
-      badge: "Sua Jornada · 2 de 8",
-      title: "Acompanhe seu ritmo diário aqui",
-      description:
-        "Neste painel lateral ficam seu progresso geral, sequência de dias ativos, XP acumulado e o acompanhamento leve da sua meta diária.",
-      tip: "Você pode ajustar sua meta diária a qualquer momento no menu do seu perfil.",
-      actionPrompt: 'Clique no cartão "Sua Jornada" em destaque para continuar.',
-      interactionMode: "click-target",
+      id: "live-themes",
       route: "/",
-      routePattern: /^\/$/,
-      targetSelectors: ['[data-tour="dashboard-journey"]'],
-      preferredSide: "left",
+      openThemeDock: true,
+      targetSelectors: [".ce-theme-dock-panel"],
+      preferredSide: "top",
+      liaExpression: "happy",
+      liaPointing: "down",
+      speech:
+        "Primeiro, deixe tudo com a sua cara! Pode testar o modo claro, escuro e as 8 cores aqui embaixo agora mesmo.",
     },
     {
-      id: "open-tracks",
-      badge: "Trilhas · 3 de 8",
-      title: "Abra o catálogo de Trilhas",
-      description:
-        "O Code Entry organiza os estudos em 7 trilhas completas: Lógica, C++, JavaScript, Python, Linux, Banco de Dados e Redes.",
-      tip: "Todas as trilhas são abertas — você escolhe por onde prefere evoluir.",
-      actionPrompt: 'Clique no item "Trilhas" destacado no menu para abrir o catálogo.',
-      interactionMode: "navigate",
-      route: "/",
-      routePattern: /^\/$/,
-      advanceOnRoutePattern: /^\/trilhas\/?$/,
-      targetSelectors: [
-        '[data-tour="nav-tracks"]',
-        '[data-tour="mobile-nav-tracks"]',
-        '[data-tour="dashboard-explore-tracks"]',
-      ],
-      preferredSide: "right",
-    },
-    {
-      id: "select-track",
-      badge: "Escolher Trilha · 4 de 8",
-      title: "Entre na trilha de Lógica de Programação",
-      description:
-        "Cada card mostra os módulos, aulas práticas, desafios e porcentagem real concluída com cores próprias da tecnologia.",
-      tip: "Recomendamos começar por Lógica caso esteja dando seus primeiros passos.",
-      actionPrompt: 'Clique no card "Lógica de Programação" (ou em qualquer trilha) em destaque.',
-      interactionMode: "navigate",
+      id: "live-tracks",
       route: "/trilhas",
-      routePattern: /^\/trilhas\/?$/,
-      advanceOnRoutePattern: /^\/trilhas\/[^/]+\/?$/,
-      targetSelectors: ['[data-tour="track-card-logic"]', '[data-tour="tracks-grid"] .ce-track-card'],
+      targetSelectors: ['[data-tour="track-card-logic"]', '[data-tour="tracks-grid"]'],
+      navSelectors: ['[data-tour="nav-tracks"]', '[data-tour="mobile-nav-tracks"]'],
+      transitionLabel: "Vamos ali em Trilhas...",
       preferredSide: "right",
+      liaExpression: "starry",
+      liaPointing: "left",
+      speech:
+        "Aqui ficam as Trilhas, com aulas guiadas e editor no navegador. Começando do zero? Vai em Lógica — eu te ensino lá dentro!",
     },
     {
-      id: "start-lesson",
-      badge: "Iniciar Aula · 5 de 8",
-      title: "Abra uma aula prática",
-      description:
-        "Na página da trilha você vê o progresso por módulo, pré-requisitos sugeridos e a lista completa de aulas e desafios.",
-      tip: "O botão principal leva direto para a próxima aula recomendada da trilha.",
-      actionPrompt: "Clique no botão destacado para abrir a primeira aula prática.",
-      interactionMode: "navigate",
-      route: "/trilhas/logic",
-      routePattern: /^\/trilhas\/[^/]+\/?$/,
-      advanceOnRoutePattern: /^\/trilhas\/[^/]+\/aula\/[^/]+\/?$/,
-      targetSelectors: ['[data-tour="track-start-lesson"]'],
+      id: "live-roadmaps",
+      route: "/roadmaps",
+      targetSelectors: ['[data-tour="roadmaps-graph"]', ".ce-rm-hero"],
+      navSelectors: ['[data-tour="nav-roadmaps"]', '[data-tour="mobile-nav-roadmaps"]'],
+      transitionLabel: "Agora vamos para Roadmaps...",
       preferredSide: "bottom",
+      liaExpression: "curious",
+      liaPointing: "up",
+      speech:
+        "Nos Roadmaps você vê o mapa completo de cada carreira para saber sempre o que estudar depois.",
     },
     {
-      id: "lesson-tabs",
-      badge: "Ambiente de Aula · 6 de 8",
-      title: "Teoria, Exemplos, Desafio e Dicas",
-      description:
-        "Toda aula traz abas organizadas lado a lado com o editor ou simulador. Ao executar seu código, os objetivos são validados em tempo real.",
-      tip: "As dicas são reveladas em 3 níveis progressivos para ajudar sem entregar a resposta de imediato.",
-      actionPrompt: 'Clique em qualquer aba destacada (ex.: "Exemplos" ou "Desafio") para testar.',
-      interactionMode: "click-target",
-      route: "/trilhas/logic/aula/logic-01",
-      routePattern: /^\/trilhas\/[^/]+\/aula\/[^/]+\/?$/,
-      targetSelectors: ['[data-tour="lesson-tabs"]'],
-      preferredSide: "bottom",
-    },
-    {
-      id: "open-labs",
-      badge: "Laboratórios · 7 de 8",
-      title: "Explore os Laboratórios Livres",
-      description:
-        "Além das aulas guiadas, você conta com 7 laboratórios abertos para experimentar código, terminal Linux, consultas SQL e redes sem restrições.",
-      tip: "Em telas menores, abra o menu no canto superior esquerdo para acessar Laboratórios.",
-      actionPrompt: 'Clique em "Laboratórios" no menu para conhecer o ambiente livre.',
-      interactionMode: "navigate",
-      route: "/trilhas/logic/aula/logic-01",
-      advanceOnRoutePattern: /^\/laboratorios\/?$/,
-      targetSelectors: [
-        '[data-tour="nav-labs"]',
-        '[data-tour="mobile-nav-labs"]',
-        '[data-tour="mobile-menu-btn"]',
-      ],
+      id: "live-projects",
+      route: "/projetos",
+      targetSelectors: [".ce-proj-card", ".ce-proj-filter-bar"],
+      navSelectors: ['[data-tour="nav-projects"]', '[data-tour="mobile-nav-projects"]'],
+      transitionLabel: "Partiu ver Projetos...",
       preferredSide: "right",
+      liaExpression: "explaining",
+      liaPointing: "left",
+      speech:
+        "E aqui em Projetos — junto com Desafios e Laboratórios no menu — você junta tudo na prática.",
     },
     {
-      id: "finish",
-      badge: "Tudo Pronto · 8 de 8",
-      title: `Você já domina a navegação, ${name}!`,
-      description:
-        "Pelo seu avatar no topo você altera qualquer uma das 8 paletas de cores, ajusta sua meta diária, controla animações e exporta backups a qualquer hora.",
-      tip: "Você pode refazer este roteiro interativo clicando no ícone ? na barra superior.",
-      interactionMode: "info",
-      route: "/laboratorios",
-      targetSelectors: ['[data-tour="topbar-profile"]'],
+      id: "ready-home",
+      route: "/",
+      targetSelectors: ['[data-tour="dashboard-start-cta"]', '[data-tour="dashboard-hero"]'],
+      navSelectors: ['[data-tour="nav-home"]'],
+      transitionLabel: "Voltando para o Início...",
       preferredSide: "bottom",
+      liaExpression: "wink",
+      liaPointing: "up",
+      speech:
+        "Tudo pronto! A busca e o Manual ficam no topo, e os temas no seu perfil. Bora começar?",
+      ctaLabel: "Bora codar!",
     },
   ];
 }

@@ -11,13 +11,22 @@ import {
   type ThemeMode,
   type ThemePaletteId,
 } from "../data/themes";
-import { localStore } from "../services/localStore";
+import {
+  localStore,
+  LocalStorageError,
+  readLastPaletteForMode,
+  readSidebarCollapsed,
+  writeSidebarCollapsed,
+  writeUiThemeCache,
+} from "../services/localStore";
 import type { TrackId } from "../types/curriculum";
 import type {
   ActivityHistoryEntry,
   BootstrapPayload,
   CompletionOutcome,
   ComputedStats,
+  RoadmapTopicStatus,
+  StorageErrorInfo,
   UnlockedAchievementSummary,
   UserSettings,
 } from "../types/progress";
@@ -35,6 +44,11 @@ interface ToastMessage {
 interface PlatformContextValue {
   loading: boolean;
   error: string | null;
+  storageError: StorageErrorInfo | null;
+  resetEpoch: number;
+  justReset: boolean;
+  clearJustReset: () => void;
+  downloadRawRecoveryCopy: () => Promise<boolean>;
   retryBootstrap: () => void;
   data: BootstrapPayload;
   stats: ComputedStats;
@@ -42,6 +56,11 @@ interface PlatformContextValue {
   setReferenceOpen: (open: boolean) => void;
   referenceTrackId: TrackId | null;
   openReferenceFor: (trackId?: TrackId | null) => void;
+  themeDockOpen: boolean;
+  themeDockMinimized: boolean;
+  setThemeDockMinimized: (minimized: boolean) => void;
+  openThemeDock: () => void;
+  closeThemeDock: () => void;
   personalizationOpen: boolean;
   completePersonalization: (opts: {
     displayName: string;
@@ -85,6 +104,8 @@ interface PlatformContextValue {
   saveDraft: (key: string, code: string, stdin?: string) => Promise<void>;
   clearDraft: (key: string) => Promise<void>;
   saveWorkspace: (key: string, state: unknown) => Promise<void>;
+  setRoadmapTopicStatus: (roadmapId: string, topicId: string, status: RoadmapTopicStatus) => Promise<void>;
+  toggleSavedRoadmap: (roadmapId: string) => Promise<void>;
   resetProgress: () => Promise<void>;
   restoreFromBackup: (payload: unknown) => Promise<void>;
   pushToast: (title: string, subtitle: string, kind?: ToastKind) => void;
@@ -112,6 +133,8 @@ const DEFAULT_PAYLOAD: BootstrapPayload = {
   achievements: {},
   workspaces: {},
   dailyStudyLog: {},
+  roadmapProgress: {},
+  savedRoadmaps: [],
 };
 
 export function toLocalDateKey(d: Date): string {
@@ -152,15 +175,25 @@ function computeStreakDays(history: ActivityHistoryEntry[]): number {
 function computeStats(data: BootstrapPayload): ComputedStats {
   const perTrack = {} as ComputedStats["perTrack"];
   const startedTracks: TrackId[] = [];
+  const activeTracks: TrackId[] = [];
   const completedTracks: TrackId[] = [];
 
   for (const track of TRACKS) {
     const trackLessons = LESSONS_BY_TRACK[track.id] || [];
     const trackChallenges = CHALLENGES.filter(c => c.trackId === track.id);
     const completedL = trackLessons.filter(l => data.lessonProgress[l.id]?.completed).length;
+    const inProgressL = trackLessons.filter(l => {
+      const p = data.lessonProgress[l.id];
+      return Boolean(p && !p.completed && (p.attempts > 0 || p.objectivesDone.length > 0));
+    }).length;
     const completedC = trackChallenges.filter(c => data.challengeProgress[c.id]?.completed).length;
+    const inProgressC = trackChallenges.filter(c => {
+      const p = data.challengeProgress[c.id];
+      return Boolean(p && !p.completed && p.attempts > 0);
+    }).length;
     const totalItems = trackLessons.length + trackChallenges.length;
     const completedItems = completedL + completedC;
+    const hasEffectiveStart = completedItems > 0 || inProgressL > 0 || inProgressC > 0;
 
     const lessonXp = trackLessons.reduce(
       (acc, l) => acc + (data.lessonProgress[l.id]?.xpAwarded || 0),
@@ -177,15 +210,19 @@ function computeStats(data: BootstrapPayload): ComputedStats {
     perTrack[track.id] = {
       totalLessons: trackLessons.length,
       completedLessons: completedL,
+      inProgressLessons: inProgressL,
       totalChallenges: trackChallenges.length,
       completedChallenges: completedC,
+      inProgressChallenges: inProgressC,
+      hasEffectiveStart,
       lessonPercent,
       percent,
       xp: lessonXp + chalXp,
     };
 
     if (completedItems > 0) startedTracks.push(track.id);
-    if (trackLessons.length > 0 && completedL === trackLessons.length) {
+    if (hasEffectiveStart) activeTracks.push(track.id);
+    if (totalItems > 0 && completedItems === totalItems) {
       completedTracks.push(track.id);
     }
   }
@@ -226,6 +263,8 @@ function computeStats(data: BootstrapPayload): ComputedStats {
     streakDays: computeStreakDays(data.history),
     historyCount: data.history.length,
     startedTracks,
+    activeTracks,
+    hasStartedAnyTrack: activeTracks.length > 0,
     completedTracks,
     perTrack,
   };
@@ -236,24 +275,24 @@ const PlatformContext = createContext<PlatformContextValue | null>(null);
 export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState<StorageErrorInfo | null>(null);
+  const [resetEpoch, setResetEpoch] = useState(0);
+  const [justReset, setJustReset] = useState(false);
   const [data, setData] = useState<BootstrapPayload>(DEFAULT_PAYLOAD);
   const dataRef = useRef<BootstrapPayload>(DEFAULT_PAYLOAD);
   dataRef.current = data;
 
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [referenceTrackId, setReferenceTrackId] = useState<TrackId | null>(null);
+  const [themeDockOpen, setThemeDockOpen] = useState(false);
+  const [themeDockMinimized, setThemeDockMinimized] = useState(false);
   const [personalizationOpen, setPersonalizationOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [celebration, setCelebration] = useState<CompletionOutcome | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
-    try {
-      return window.localStorage.getItem("ce.sidebarCollapsed") === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => readSidebarCollapsed());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const autoPromptedRef = useRef(false);
+  const isResettingRef = useRef(false);
   const themeTransitionTimerRef = useRef<number | null>(null);
 
   const pulseThemeTransition = useCallback(() => {
@@ -280,42 +319,84 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const fetchBootstrap = useCallback(async (isActive: () => boolean) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const payload = await localStore.bootstrap();
-      if (!isActive()) return;
-      const resolvedTheme = payload.settings.theme === "light" ? "light" : "dark";
-      const resolvedPalette = resolvePalette(resolvedTheme, payload.settings.themePalette);
-      const normalized: BootstrapPayload = {
-        ...payload,
-        settings: {
-          ...payload.settings,
-          theme: resolvedPalette.mode,
-          themePalette: resolvedPalette.id,
-        },
-        dailyStudyLog: payload.dailyStudyLog || {},
-      };
-      setData(normalized);
-      dataRef.current = normalized;
-
-      if (!autoPromptedRef.current) {
-        autoPromptedRef.current = true;
-        if (!normalized.settings.profileSetupCompleted) {
-          setPersonalizationOpen(true);
-        } else if (!normalized.settings.onboardingCompleted) {
-          setTourOpen(true);
-        }
-      }
-    } catch (err) {
-      if (!isActive()) return;
-      console.error("Erro ao carregar dados iniciais:", err);
-      setError(err instanceof Error ? err.message : "Não foi possível carregar seus dados salvos.");
-    } finally {
-      if (isActive()) setLoading(false);
-    }
+  const clearJustReset = useCallback(() => {
+    setJustReset(false);
   }, []);
+
+  const normalizeLoadedPayload = useCallback((payload: BootstrapPayload): BootstrapPayload => {
+    const resolvedTheme = payload.settings.theme === "light" ? "light" : "dark";
+    const resolvedPalette = resolvePalette(resolvedTheme, payload.settings.themePalette);
+    const validTrackId = TRACK_MAP[payload.settings.activeTrackId as TrackId]
+      ? (payload.settings.activeTrackId as TrackId)
+      : "logic";
+    return {
+      ...payload,
+      settings: {
+        ...payload.settings,
+        theme: resolvedPalette.mode,
+        themePalette: resolvedPalette.id,
+        activeTrackId: validTrackId,
+      },
+      dailyStudyLog: payload.dailyStudyLog || {},
+      roadmapProgress: payload.roadmapProgress || {},
+      savedRoadmaps: Array.isArray(payload.savedRoadmaps) ? payload.savedRoadmaps : [],
+    };
+  }, []);
+
+  const fetchBootstrap = useCallback(
+    async (isActive: () => boolean) => {
+      setLoading(true);
+      setError(null);
+      setStorageError(null);
+      try {
+        const { payload, warnings } = await localStore.bootstrapWithMeta();
+        if (!isActive()) return;
+        const normalized = normalizeLoadedPayload(payload);
+        setData(normalized);
+        dataRef.current = normalized;
+
+        if (warnings.length > 0) {
+          pushToast(
+            "Dados preservados com ajustes",
+            warnings[0],
+            "info"
+          );
+        }
+
+        if (!autoPromptedRef.current) {
+          autoPromptedRef.current = true;
+          if (!normalized.settings.profileSetupCompleted) {
+            setPersonalizationOpen(true);
+          } else if (!normalized.settings.onboardingCompleted) {
+            setTourOpen(true);
+          }
+        }
+      } catch (err) {
+        if (!isActive()) return;
+        console.error("Erro ao carregar dados iniciais:", err);
+        if (err instanceof LocalStorageError) {
+          setStorageError(err.toInfo());
+          setError(err.message);
+        } else {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : "Não foi possível carregar seus dados salvos.";
+          setStorageError({
+            code: "STORAGE_UNAVAILABLE",
+            message: msg,
+            canDownloadRawBackup: false,
+            canImportJson: true,
+            canResetLocal: true,
+          });
+          setError(msg);
+        }
+      } finally {
+        if (isActive()) setLoading(false);
+      }
+    },
+    [normalizeLoadedPayload, pushToast]
+  );
 
   useEffect(() => {
     let active = true;
@@ -329,7 +410,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchBootstrap(() => true);
   }, [fetchBootstrap]);
 
-  // Sincroniza modo + paleta no elemento raiz <html> e armazena cache anti-flash
+  // Sincroniza modo + paleta no elemento raiz <html> e grava cache anti-flash somente quando há preferência ativa
   useEffect(() => {
     const root = document.documentElement;
     const palette = resolvePalette(data.settings.theme, data.settings.themePalette);
@@ -341,14 +422,24 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     root.dataset.palette = palette.id;
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) metaTheme.setAttribute("content", palette.metaThemeColor);
-    try {
-      window.localStorage.setItem("ce.themeMode", palette.mode);
-      window.localStorage.setItem("ce.themePalette", palette.id);
-      window.localStorage.setItem(`ce.lastPalette.${palette.mode}`, palette.id);
-    } catch {
-      // Ignora restrições de armazenamento local do navegador
+
+    const hasExplicitThemeOrProfile =
+      data.settings.profileSetupCompleted ||
+      data.settings.onboardingCompleted ||
+      palette.mode !== "dark" ||
+      palette.id !== DEFAULT_DARK_PALETTE;
+
+    if (!loading && !error && hasExplicitThemeOrProfile) {
+      writeUiThemeCache(palette.mode, palette.id);
     }
-  }, [data.settings.theme, data.settings.themePalette]);
+  }, [
+    data.settings.theme,
+    data.settings.themePalette,
+    data.settings.profileSetupCompleted,
+    data.settings.onboardingCompleted,
+    loading,
+    error,
+  ]);
 
   // Sincroniza preferência explícita de redução de animações no <html>
   useEffect(() => {
@@ -363,22 +454,20 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const toggleSidebarCollapsed = useCallback(() => {
     setSidebarCollapsed(prev => {
       const next = !prev;
-      try {
-        window.localStorage.setItem("ce.sidebarCollapsed", next ? "1" : "0");
-      } catch {
-        // Ignora restrições de armazenamento local do navegador
-      }
+      writeSidebarCollapsed(next);
       return next;
     });
   }, []);
 
-  // Cronômetro real de estudo ativo (envia a cada 15s enquanto a aba está visível)
+  // Cronômetro real de estudo ativo (pausa durante carregamento, erro ou personalização inicial)
   useEffect(() => {
+    if (loading || Boolean(error) || personalizationOpen) return;
     const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && !isResettingRef.current) {
         localStore
           .addStudySeconds(15, toLocalDateKey(new Date()))
           .then(res => {
+            if (isResettingRef.current) return;
             setData(prev => ({
               ...prev,
               settings: res.settings,
@@ -389,7 +478,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     }, 15000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [loading, error, personalizationOpen]);
 
   const stats = useMemo(() => computeStats(data), [data]);
 
@@ -416,7 +505,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const def = ACHIEVEMENTS.find(a => a.id === item.achievementId);
             if (def) {
               unlockedSummaries.push({ id: def.id, title: def.title, xpBonus: def.xpBonus });
-              pushToast(`Conquista desbloqueada: ${def.title}`, `+${def.xpBonus} XP bônus`, "success");
+              if (!suppressStandaloneConfetti) {
+                pushToast(`Conquista desbloqueada: ${def.title}`, `+${def.xpBonus} XP bônus`, "success");
+              }
             }
           }
           if (!suppressStandaloneConfetti && unlockedSummaries.length > 0) {
@@ -435,6 +526,16 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const openReferenceFor = useCallback((trackId: TrackId | null = null) => {
     setReferenceTrackId(trackId);
     setReferenceOpen(true);
+  }, []);
+
+  const openThemeDock = useCallback(() => {
+    setThemeDockMinimized(false);
+    setThemeDockOpen(true);
+  }, []);
+
+  const closeThemeDock = useCallback(() => {
+    setThemeDockOpen(false);
+    setThemeDockMinimized(false);
   }, []);
 
   const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
@@ -469,12 +570,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const setThemeMode = useCallback(
     async (mode: ThemeMode) => {
-      let savedForMode: string | null = null;
-      try {
-        savedForMode = window.localStorage.getItem(`ce.lastPalette.${mode}`);
-      } catch {
-        savedForMode = null;
-      }
+      const savedForMode = readLastPaletteForMode(mode);
       const fallback = mode === "light" ? DEFAULT_LIGHT_PALETTE : DEFAULT_DARK_PALETTE;
       const palette = resolvePalette(mode, savedForMode || fallback);
       await setThemePalette(palette.id);
@@ -511,6 +607,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         themePalette: resolvedPalette.id,
         profileSetupCompleted: true,
       });
+      setJustReset(false);
       setPersonalizationOpen(false);
       if (!dataRef.current.settings.onboardingCompleted) {
         setTourOpen(true);
@@ -524,6 +621,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...prev,
       settings: { ...prev.settings, profileSetupCompleted: true },
     }));
+    setJustReset(false);
     setPersonalizationOpen(false);
     try {
       await updateSettings({ profileSetupCompleted: true });
@@ -564,7 +662,7 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await persistOnboardingDone();
     pushToast(
       `Tudo pronto, ${dataRef.current.settings.displayName}!`,
-      "Você pode rever o roteiro inicial quando quiser pelo botão ? no topo.",
+      "Você pode rever o roteiro inicial ou personalizar temas pelo menu do seu Perfil.",
       "info"
     );
   }, [persistOnboardingDone, pushToast]);
@@ -795,7 +893,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 
   const saveDraft = useCallback(async (key: string, code: string, stdin = "") => {
+    if (isResettingRef.current) return;
     const res = await localStore.saveDraft(key, code, stdin);
+    if (isResettingRef.current) return;
     setData(prev => ({
       ...prev,
       drafts: {
@@ -806,7 +906,9 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const clearDraft = useCallback(async (key: string) => {
+    if (isResettingRef.current) return;
     await localStore.deleteDraft(key);
+    if (isResettingRef.current) return;
     setData(prev => {
       const next = { ...prev.drafts };
       delete next[key];
@@ -815,30 +917,126 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const saveWorkspace = useCallback(async (key: string, state: unknown) => {
+    if (isResettingRef.current) return;
     await localStore.saveWorkspace(key, state);
+    if (isResettingRef.current) return;
     setData(prev => ({
       ...prev,
       workspaces: { ...prev.workspaces, [key]: state },
     }));
   }, []);
 
+  const setRoadmapTopicStatus = useCallback(
+    async (roadmapId: string, topicId: string, status: RoadmapTopicStatus) => {
+      if (isResettingRef.current) return;
+      const res = await localStore.setRoadmapTopicStatus(roadmapId, topicId, status);
+      if (isResettingRef.current) return;
+      setData(prev => {
+        const updated = { ...prev, roadmapProgress: res.roadmapProgress };
+        dataRef.current = updated;
+        return updated;
+      });
+    },
+    []
+  );
+
+  const toggleSavedRoadmap = useCallback(
+    async (roadmapId: string) => {
+      if (isResettingRef.current) return;
+      const res = await localStore.toggleSavedRoadmap(roadmapId);
+      if (isResettingRef.current) return;
+      setData(prev => {
+        const updated = { ...prev, savedRoadmaps: res.savedRoadmaps };
+        dataRef.current = updated;
+        return updated;
+      });
+      pushToast(
+        res.saved ? "Roadmap salvo" : "Roadmap removido dos salvos",
+        res.saved
+          ? "Você pode filtrar seus roadmaps salvos a qualquer momento."
+          : "O mapa continua disponível normalmente no catálogo.",
+        "info"
+      );
+    },
+    [pushToast]
+  );
+
+  const downloadRawRecoveryCopy = useCallback(async (): Promise<boolean> => {
+    const snapshot = await localStore.getRawRecoverySnapshot();
+    if (!snapshot) return false;
+    const copy = snapshot.bytes.slice();
+    const blob = new Blob([copy.buffer], { type: "application/x-sqlite3" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = snapshot.filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    return true;
+  }, []);
+
   const resetProgress = useCallback(async () => {
-    const next = await localStore.resetAll(true);
-    const normalized = { ...next, dailyStudyLog: next.dailyStudyLog || {} };
-    dataRef.current = normalized;
-    setData(normalized);
-    pushToast("Progresso reiniciado", "Seu avanço de aulas, desafios e histórico foi zerado.", "info");
-  }, [pushToast]);
+    isResettingRef.current = true;
+    try {
+      const fresh = await localStore.resetAllLocalData();
+      const normalized = normalizeLoadedPayload(fresh);
+      dataRef.current = normalized;
+      setData(normalized);
+      setError(null);
+      setStorageError(null);
+      setLoading(false);
+      setSidebarCollapsed(false);
+      setCelebration(null);
+      setReferenceOpen(false);
+      setReferenceTrackId(null);
+      setThemeDockOpen(false);
+      setThemeDockMinimized(false);
+      setTourOpen(false);
+      setJustReset(true);
+      autoPromptedRef.current = true;
+      setPersonalizationOpen(true);
+      setResetEpoch(epoch => epoch + 1);
+
+      const root = document.documentElement;
+      root.classList.remove("light-theme", "reduced-motion");
+      root.dataset.palette = DEFAULT_DARK_PALETTE;
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) metaTheme.setAttribute("content", "#070a14");
+
+      pushToast(
+        "Reset local concluído",
+        "Todos os dados locais do Code Entry foram removidos. O site voltou ao estado inicial.",
+        "info"
+      );
+    } finally {
+      window.setTimeout(() => {
+        isResettingRef.current = false;
+      }, 0);
+    }
+  }, [normalizeLoadedPayload, pushToast]);
 
   const restoreFromBackup = useCallback(
     async (payload: unknown) => {
       const next = await localStore.restoreBackup(payload);
-      const normalized = { ...next, dailyStudyLog: next.dailyStudyLog || {} };
+      const normalized = normalizeLoadedPayload(next);
       dataRef.current = normalized;
       setData(normalized);
+      setError(null);
+      setStorageError(null);
+      setLoading(false);
+      setCelebration(null);
+      setJustReset(false);
+      autoPromptedRef.current = true;
+      setPersonalizationOpen(!normalized.settings.profileSetupCompleted);
+      setTourOpen(
+        Boolean(
+          normalized.settings.profileSetupCompleted && !normalized.settings.onboardingCompleted
+        )
+      );
+      setResetEpoch(epoch => epoch + 1);
       pushToast("Backup restaurado", "Progresso e preferências importados neste dispositivo.");
     },
-    [pushToast]
+    [normalizeLoadedPayload, pushToast]
   );
 
   return (
@@ -846,6 +1044,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         loading,
         error,
+        storageError,
+        resetEpoch,
+        justReset,
+        clearJustReset,
+        downloadRawRecoveryCopy,
         retryBootstrap,
         data,
         stats,
@@ -853,6 +1056,11 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setReferenceOpen,
         referenceTrackId,
         openReferenceFor,
+        themeDockOpen,
+        themeDockMinimized,
+        setThemeDockMinimized,
+        openThemeDock,
+        closeThemeDock,
         personalizationOpen,
         completePersonalization,
         skipPersonalization,
@@ -874,6 +1082,8 @@ export const PlatformProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         saveDraft,
         clearDraft,
         saveWorkspace,
+        setRoadmapTopicStatus,
+        toggleSavedRoadmap,
         resetProgress,
         restoreFromBackup,
         pushToast,

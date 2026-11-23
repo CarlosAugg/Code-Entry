@@ -1,5 +1,10 @@
-import React, { useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, Clock, Swords } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  Swords,
+} from "lucide-react";
 import { CHALLENGES } from "../data/challenges";
 import { TRACK_MAP, TRACKS } from "../data/tracks";
 import { usePlatform } from "../context/PlatformContext";
@@ -8,12 +13,19 @@ import { AmbientAurora } from "../components/motion/AmbientAurora";
 import { ShinyText } from "../components/motion/ShinyText";
 import { SpotlightCard } from "../components/motion/SpotlightCard";
 import { TechIcon } from "../components/shared/TechIcon";
+import { HeroIllustration } from "../components/shared/HeroIllustration";
+
+const TRAIL_TOP_OFFSETS = [26, 146, 206, 122];
+const TRAIL_COL_WIDTH = 256;
+const TRAIL_CARD_WIDTH = 222;
+const TRAIL_CANVAS_HEIGHT = 382;
 
 export const ChallengesPage: React.FC = () => {
   const { data, stats } = usePlatform();
   const [trackFilter, setTrackFilter] = useState<"all" | TrackId>("all");
   const [diffFilter, setDiffFilter] = useState<string>("Todas");
   const [statusFilter, setStatusFilter] = useState<"Todos" | "Concluídos" | "Pendentes">("Todos");
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   const filtered = useMemo(() => {
     return CHALLENGES.filter(ch => {
@@ -26,9 +38,30 @@ export const ChallengesPage: React.FC = () => {
     });
   }, [data.challengeProgress, diffFilter, statusFilter, trackFilter]);
 
+  // Converte rolagem vertical do mouse em rolagem horizontal dentro da trilha
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      const canScrollLeft = el.scrollLeft > 1;
+      if ((e.deltaY > 0 && canScrollRight) || (e.deltaY < 0 && canScrollLeft)) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [filtered.length]);
+
+  const trailWidth = Math.max(720, filtered.length * TRAIL_COL_WIDTH + 52);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <section className="ce-hero-banner" style={{ gridTemplateColumns: "1fr auto" }}>
+      <section className="ce-hero-banner ce-hero-with-art">
         <AmbientAurora />
         <div>
           <span className="ce-badge" style={{ borderColor: "var(--border-accent)", color: "var(--accent-secondary)" }}>
@@ -43,12 +76,17 @@ export const ChallengesPage: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <div className="ce-metric-tile" style={{ minWidth: 130 }}>
-            <span>Concluídos</span>
-            <strong style={{ color: "var(--accent-success)" }}>
-              {stats.completedChallenges} / {stats.totalChallenges}
-            </strong>
+        <div className="ce-hero-right-cluster">
+          <div className="ce-hero-art-slot" aria-hidden="true">
+            <HeroIllustration variant="challenges" />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div className="ce-metric-tile" style={{ minWidth: 130 }}>
+              <span>Concluídos</span>
+              <strong style={{ color: "var(--accent-success)" }}>
+                {stats.completedChallenges} / {stats.totalChallenges}
+              </strong>
+            </div>
           </div>
         </div>
       </section>
@@ -78,7 +116,7 @@ export const ChallengesPage: React.FC = () => {
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <select
             className="ce-select"
             style={{ height: 32, fontSize: 12.5 }}
@@ -112,66 +150,194 @@ export const ChallengesPage: React.FC = () => {
           Nenhum desafio encontrado para esses filtros.
         </div>
       ) : (
-        <section data-tour="challenges-grid" className="ce-tracks-grid-3">
-          {filtered.map(ch => {
-            const track = TRACK_MAP[ch.trackId];
-            const prog = data.challengeProgress[ch.id];
-            const done = Boolean(prog?.completed);
-            return (
-              <SpotlightCard
-                key={ch.id}
-                as="link"
-                to={`/desafios/${ch.id}`}
-                className="ce-track-card ce-card-interactive"
-                spotlightColor={track.accentSoft}
-                style={
-                  {
-                    "--item-soft": track.accentSoft,
-                    "--item-border": track.accentBorder,
-                  } as React.CSSProperties
-                }
-              >
-                <div className="ce-track-card-top">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <TechIcon trackId={ch.trackId} size={24} boxed />
-                    <div>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: track.accentSecondary }}>
-                        {track.name} · {ch.topic}
-                      </div>
-                      <span className="ce-badge" style={{ marginTop: 3 }}>{ch.difficulty}</span>
+        <section
+          data-tour="challenges-grid"
+          ref={scrollerRef}
+          className="ce-surface ce-hscroll-trail"
+          aria-label="Trilha horizontal de desafios"
+          style={{
+            overflowX: "auto",
+            overflowY: "hidden",
+            paddingBottom: 6,
+            background:
+              "radial-gradient(circle at 12% 50%, rgba(99, 102, 241, 0.08), transparent 45%), radial-gradient(circle at 88% 50%, rgba(16, 185, 129, 0.08), transparent 45%), var(--bg-surface)",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              width: trailWidth,
+              height: TRAIL_CANVAS_HEIGHT,
+            }}
+          >
+            {/* Caminho sinuoso horizontal */}
+            <svg
+              viewBox={`0 0 ${trailWidth} ${TRAIL_CANVAS_HEIGHT}`}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: trailWidth,
+                height: TRAIL_CANVAS_HEIGHT,
+                pointerEvents: "none",
+                zIndex: 0,
+              }}
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="ce-ch-trail-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#6366f1" />
+                  <stop offset="50%" stopColor="#06b6d4" />
+                  <stop offset="100%" stopColor="#10b981" />
+                </linearGradient>
+              </defs>
+
+              {filtered.map((_, idx) => {
+                if (idx === filtered.length - 1) return null;
+                const x1 = 26 + idx * TRAIL_COL_WIDTH + TRAIL_CARD_WIDTH / 2;
+                const y1 = TRAIL_TOP_OFFSETS[idx % TRAIL_TOP_OFFSETS.length] + 74;
+                const x2 = 26 + (idx + 1) * TRAIL_COL_WIDTH + TRAIL_CARD_WIDTH / 2;
+                const y2 = TRAIL_TOP_OFFSETS[(idx + 1) % TRAIL_TOP_OFFSETS.length] + 74;
+                const midX = (x1 + x2) / 2;
+
+                return (
+                  <path
+                    key={`ch-seg-${idx}`}
+                    d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
+                    fill="none"
+                    stroke="url(#ce-ch-trail-grad)"
+                    strokeWidth="4"
+                    strokeOpacity="0.45"
+                    strokeDasharray="10 8"
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+            </svg>
+
+            {filtered.map((ch, idx) => {
+              const track = TRACK_MAP[ch.trackId];
+              const prog = data.challengeProgress[ch.id];
+              const done = Boolean(prog?.completed);
+              const left = 26 + idx * TRAIL_COL_WIDTH;
+              const top = TRAIL_TOP_OFFSETS[idx % TRAIL_TOP_OFFSETS.length];
+              const stepLabel = String(idx + 1).padStart(2, "0");
+
+              return (
+                <SpotlightCard
+                  key={ch.id}
+                  as="link"
+                  to={`/desafios/${ch.id}`}
+                  className="ce-track-card ce-card-interactive"
+                  spotlightColor={track.accentSoft}
+                  style={
+                    {
+                      position: "absolute",
+                      left,
+                      top,
+                      width: TRAIL_CARD_WIDTH,
+                      minHeight: 148,
+                      padding: "12px 13px",
+                      gap: 8,
+                      zIndex: 2,
+                      "--item-soft": track.accentSoft,
+                      "--item-border": track.accentBorder,
+                    } as React.CSSProperties
+                  }
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 6,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                      <span
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          background: done ? "rgba(34, 197, 94, 0.2)" : "var(--accent-soft)",
+                          border: `1.5px solid ${done ? "var(--accent-success)" : "var(--border-accent)"}`,
+                          color: done ? "var(--accent-success)" : "var(--accent-secondary)",
+                          fontSize: 10,
+                          fontWeight: 800,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {stepLabel}
+                      </span>
+                      <TechIcon trackId={ch.trackId} size={18} boxed />
                     </div>
+
+                    {done ? (
+                      <span className="ce-badge ce-badge-diff-easy" style={{ flexShrink: 0, fontSize: 10.5 }}>
+                        <CheckCircle2 size={10} />
+                        <span>Feito</span>
+                      </span>
+                    ) : (
+                      <span className="ce-badge" style={{ flexShrink: 0, fontSize: 10.5 }}>
+                        +{ch.xp} XP
+                      </span>
+                    )}
                   </div>
-                  {done ? (
-                    <span className="ce-badge ce-badge-diff-easy">
-                      <CheckCircle2 size={12} />
-                      <span>Resolvido</span>
+
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        color: track.accentSecondary,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {track.name} · {ch.difficulty}
+                    </div>
+                    <h2
+                      style={{
+                        fontSize: 13.5,
+                        margin: "3px 0 0",
+                        lineHeight: 1.3,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {ch.title}
+                    </h2>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "auto",
+                      paddingTop: 7,
+                      borderTop: "1px solid var(--border-subtle)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      fontSize: 11,
+                    }}
+                  >
+                    <span style={{ color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <Clock size={10.5} />
+                      ~{ch.estimatedMinutes} min
                     </span>
-                  ) : (
-                    <span className="ce-badge">+{ch.xp} XP</span>
-                  )}
-                </div>
-
-                <div>
-                  <h2 style={{ fontSize: 16 }}>{ch.title}</h2>
-                  <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 5 }}>
-                    {ch.summary}
-                  </p>
-                </div>
-
-                <div style={{ marginTop: "auto", paddingTop: 10, borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
-                  <span style={{ color: "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <Clock size={12} />
-                    ~{ch.estimatedMinutes} min
-                    {prog?.attempts ? ` · ${prog.attempts} tent.` : ""}
-                  </span>
-                  <span style={{ color: track.accentSecondary, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    <span>{done ? "Revisar" : "Resolver"}</span>
-                    <ArrowRight size={13} />
-                  </span>
-                </div>
-              </SpotlightCard>
-            );
-          })}
+                    <span style={{ color: track.accentSecondary, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                      <span>{done ? "Revisar" : "Resolver"}</span>
+                      <ArrowRight size={11} />
+                    </span>
+                  </div>
+                </SpotlightCard>
+              );
+            })}
+          </div>
         </section>
       )}
     </div>

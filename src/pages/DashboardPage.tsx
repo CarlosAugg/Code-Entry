@@ -7,6 +7,7 @@ import {
   Clock,
   Compass,
   Flame,
+  FolderKanban,
   History,
   Layers,
   Play,
@@ -23,6 +24,7 @@ import { ShinyText } from "../components/motion/ShinyText";
 import { SpotlightCard } from "../components/motion/SpotlightCard";
 import { ProgressRing } from "../components/shared/ProgressRing";
 import { TechIcon } from "../components/shared/TechIcon";
+import type { TrackId } from "../types/curriculum";
 
 export const DashboardPage: React.FC = () => {
   const { data, stats } = usePlatform();
@@ -33,28 +35,46 @@ export const DashboardPage: React.FC = () => {
   const animatedStudyMinutes = useAnimatedNumber(stats.studyMinutes, 420);
   const animatedXp = useAnimatedNumber(stats.totalXp, 460);
 
-  // Seleciona próxima aula recomendada a partir da trilha ativa e progresso real
-  const continueLesson = useMemo(() => {
+  const hasStartedAny = stats.hasStartedAnyTrack;
+  const customName =
+    data.settings.displayName && data.settings.displayName !== "Estudante"
+      ? data.settings.displayName
+      : null;
+
+  // Seleciona a aula recomendada: em progresso primeiro, depois próxima não concluída
+  const recommendedLesson = useMemo(() => {
     const activeTrackLessons = LESSONS_BY_TRACK[data.settings.activeTrackId] || ALL_LESSONS;
+    const inProgress =
+      activeTrackLessons.find(l => {
+        const p = data.lessonProgress[l.id];
+        return Boolean(p && !p.completed && (p.attempts > 0 || p.objectivesDone.length > 0));
+      }) ||
+      ALL_LESSONS.find(l => {
+        const p = data.lessonProgress[l.id];
+        return Boolean(p && !p.completed && (p.attempts > 0 || p.objectivesDone.length > 0));
+      });
+    if (inProgress) return inProgress;
+
     const nextInActive = activeTrackLessons.find(l => !data.lessonProgress[l.id]?.completed);
     if (nextInActive) return nextInActive;
     const nextGlobal = ALL_LESSONS.find(l => !data.lessonProgress[l.id]?.completed);
     return nextGlobal || activeTrackLessons[0];
   }, [data.lessonProgress, data.settings.activeTrackId]);
 
-  const continueTrack = TRACK_MAP[continueLesson.trackId];
+  const recommendedTrack = TRACK_MAP[recommendedLesson.trackId];
 
-  const featuredStripTracks = useMemo(() => {
-    const pickedIds: string[] = [];
-    for (const id of stats.startedTracks) {
+  const featuredTracks = useMemo(() => {
+    const pickedIds: TrackId[] = [];
+    for (const id of stats.activeTracks) {
       if (!pickedIds.includes(id)) pickedIds.push(id);
     }
-    for (const t of TRACKS) {
-      if (!pickedIds.includes(t.id)) pickedIds.push(t.id);
+    const starterOrder: TrackId[] = ["logic", "web", "js", "python", "cpp", "database", "linux", "networks"];
+    for (const id of starterOrder) {
+      if (!pickedIds.includes(id) && TRACK_MAP[id]) pickedIds.push(id);
       if (pickedIds.length >= 4) break;
     }
-    return pickedIds.slice(0, 4).map(id => TRACK_MAP[id as keyof typeof TRACK_MAP]);
-  }, [stats.startedTracks]);
+    return pickedIds.slice(0, 4).map(id => TRACK_MAP[id]);
+  }, [stats.activeTracks]);
 
   const highlightAchievement = useMemo(() => {
     const unlockedIds = Object.keys(data.achievements);
@@ -74,49 +94,46 @@ export const DashboardPage: React.FC = () => {
       {/* COLUNA PRINCIPAL */}
       <div className="ce-dash-main">
         {/* Hero Banner */}
-        <section className="ce-hero-banner" aria-label="Boas-vindas">
+        <section className="ce-hero-banner" data-tour="dashboard-hero" aria-label="Início">
           <AmbientAurora speed={HERO_BANNER_SPEED_MULTIPLIER} />
           <div>
             <span className="ce-badge" style={{ borderColor: "var(--border-accent)", color: "var(--accent-secondary)" }}>
               <Sparkles size={12} />
-              <ShinyText text={`Bem-vindo(a), ${data.settings.displayName}`} />
+              <ShinyText text={customName ? `Olá, ${customName}` : "Prática interativa no navegador"} />
             </span>
 
             <h1 className="ce-hero-title">
-              {stats.completedActivities === 0 ? (
-                <BlurText
-                  text="Sua jornada no Code Entry começa aqui"
-                  highlight="Code Entry"
-                />
+              {hasStartedAny ? (
+                <BlurText text="Retome sua jornada de estudos" highlight="jornada de estudos" />
               ) : (
-                <BlurText
-                  text={`Continue sua jornada, ${data.settings.displayName}`}
-                  highlight={data.settings.displayName}
-                />
+                <BlurText text="Aprenda tecnologia praticando no navegador" highlight="praticando no navegador" />
               )}
             </h1>
 
             <p className="ce-hero-sub">
-              Aprenda programação, Linux, redes e bancos de dados com explicações claras, prática imediata e objetivos fáceis de acompanhar.
+              {hasStartedAny
+                ? "Retome de onde parou e continue avançando no seu ritmo."
+                : "Pratique programação, redes, banco de dados e web direto no navegador."}
             </p>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
                 type="button"
+                data-tour="dashboard-start-cta"
                 className="ce-btn ce-btn-primary"
-                onClick={() => navigate(`/trilhas/${continueLesson.trackId}/aula/${continueLesson.id}`)}
+                onClick={() => navigate(`/trilhas/${recommendedLesson.trackId}/aula/${recommendedLesson.id}`)}
               >
                 <Play size={14} fill="currentColor" />
-                <span>{stats.completedActivities === 0 ? "Começar primeira aula" : "Continuar estudando"}</span>
+                <span>{hasStartedAny ? "Continuar estudando" : "Começar primeira aula"}</span>
               </button>
               <button
                 type="button"
                 data-tour="dashboard-explore-tracks"
                 className="ce-btn ce-btn-ghost"
-                onClick={() => navigate("/trilhas")}
+                onClick={() => navigate(hasStartedAny ? "/projetos" : "/roadmaps")}
               >
-                <Compass size={14} />
-                <span>Explorar trilhas</span>
+                {hasStartedAny ? <FolderKanban size={14} /> : <Compass size={14} />}
+                <span>{hasStartedAny ? "Ver Projetos" : "Explorar Roadmaps"}</span>
               </button>
             </div>
           </div>
@@ -133,7 +150,7 @@ export const DashboardPage: React.FC = () => {
             <div>
               <span style={{ color: "#c084fc" }}>const</span>{" "}
               <span style={{ color: "#60a5fa" }}>trilha</span> ={" "}
-              <span style={{ color: "#fbbf24" }}>"{continueTrack.name}"</span>;
+              <span style={{ color: "#fbbf24" }}>"{recommendedTrack.name}"</span>;
             </div>
             <div>
               <span style={{ color: "#c084fc" }}>const</span>{" "}
@@ -146,140 +163,128 @@ export const DashboardPage: React.FC = () => {
               <span style={{ color: "#4ade80" }}>`{"${concluidas}"} / {stats.totalActivities} ({stats.overallPercent}%)`</span>;
             </div>
             <div style={{ color: "#64748b", marginTop: 6 }}>
-              {"// Próximo passo: "}{continueLesson.title}
+              {`// ${hasStartedAny ? "Próximo passo" : "Ponto de partida"}: ${recommendedLesson.title}`}
             </div>
           </div>
         </section>
 
-        {/* Faixa compacta de progresso por tecnologia */}
-        <section aria-label="Resumo rápido das trilhas">
-          <div className="ce-mini-track-strip">
-            {featuredStripTracks.map(track => {
-              const tp = stats.perTrack[track.id];
-              const doneTotal = tp.completedLessons + tp.completedChallenges;
-              const allTotal = tp.totalLessons + tp.totalChallenges;
-              return (
-                <SpotlightCard
-                  key={track.id}
-                  as="link"
-                  to={`/trilhas/${track.id}`}
-                  className="ce-mini-track-item ce-card-interactive"
-                  spotlightColor={track.accentSoft}
-                  style={
-                    {
-                      "--item-border": track.accentBorder,
-                    } as React.CSSProperties
-                  }
-                >
-                  <TechIcon trackId={track.id} size={22} boxed />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
-                      <strong style={{ fontSize: 13 }}>{track.name}</strong>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: track.accentSecondary }}>
-                        {tp.percent}%
-                      </span>
-                    </div>
-                    <div className="ce-progress-track" style={{ marginTop: 6, height: 5 }}>
-                      <div
-                        className="ce-progress-fill"
-                        style={{ width: `${tp.percent}%`, background: track.accentColor }}
-                      />
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                      {doneTotal} / {allTotal} atividades
-                    </div>
-                  </div>
-                </SpotlightCard>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Barra horizontal Continue estudando */}
-        <SpotlightCard
-          starBorder
-          className="ce-continue-strip"
-          spotlightColor={continueTrack.accentSoft}
-          style={
-            {
-              "--track-accent": continueTrack.accentColor,
-              "--track-soft": continueTrack.accentSoft,
-            } as React.CSSProperties
-          }
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            <TechIcon trackId={continueTrack.id} size={28} boxed />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span className="ce-badge" style={{ borderColor: continueTrack.accentBorder, color: continueTrack.accentSecondary }}>
-                  Aula {String(continueLesson.order).padStart(2, "0")} de {LESSONS_BY_TRACK[continueTrack.id].length}
-                </span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{continueLesson.moduleTitle}</span>
-              </div>
-              <h2 style={{ fontSize: 17, marginTop: 4 }}>{continueLesson.title}</h2>
-              <p style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
-                {continueTrack.name} · {continueLesson.subtitle}
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="ce-btn ce-btn-primary"
-            style={{ flexShrink: 0 }}
-            onClick={() => navigate(`/trilhas/${continueLesson.trackId}/aula/${continueLesson.id}`)}
+        {/* Barra de retomada (exibida após iniciar os estudos para evitar redundância com o Hero em 0%) */}
+        {hasStartedAny && (
+          <SpotlightCard
+            starBorder
+            className="ce-continue-strip"
+            spotlightColor={recommendedTrack.accentSoft}
+            style={
+              {
+                "--track-accent": recommendedTrack.accentColor,
+                "--track-soft": recommendedTrack.accentSoft,
+              } as React.CSSProperties
+            }
           >
-            <span>Continuar</span>
-            <ArrowRight size={15} />
-          </button>
-        </SpotlightCard>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+              <TechIcon trackId={recommendedTrack.id} size={28} boxed />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span className="ce-badge" style={{ borderColor: recommendedTrack.accentBorder, color: recommendedTrack.accentSecondary }}>
+                    Em foco · Aula {String(recommendedLesson.order).padStart(2, "0")} de {LESSONS_BY_TRACK[recommendedTrack.id].length}
+                  </span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{recommendedLesson.moduleTitle}</span>
+                </div>
+                <h2 style={{ fontSize: 17, marginTop: 4 }}>{recommendedLesson.title}</h2>
+                <p style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
+                  {recommendedTrack.name} · {recommendedLesson.subtitle}
+                </p>
+              </div>
+            </div>
 
-        {/* Grade de Trilhas disponíveis */}
-        <section aria-label="Trilhas disponíveis">
+            <button
+              type="button"
+              className="ce-btn ce-btn-primary"
+              style={{ flexShrink: 0 }}
+              onClick={() => navigate(`/trilhas/${recommendedLesson.trackId}/aula/${recommendedLesson.id}`)}
+            >
+              <span>Continuar aula</span>
+              <ArrowRight size={15} />
+            </button>
+          </SpotlightCard>
+        )}
+
+        {/* Trilhas em destaque com capas ilustradas */}
+        <section aria-label="Trilhas de estudo">
           <div className="ce-section-head">
-            <h2 className="ce-section-title">
-              <Layers size={17} style={{ color: "var(--accent-secondary)" }} />
-              <span>Trilhas disponíveis</span>
-            </h2>
+            <div>
+              <h2 className="ce-section-title">
+                <Layers size={17} style={{ color: "var(--accent-secondary)" }} />
+                <span>{hasStartedAny ? "Suas trilhas & sugestões" : "Trilhas para começar"}</span>
+              </h2>
+              <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+                Cursos práticos guiados diretamente no navegador
+              </span>
+            </div>
             <Link to="/trilhas" className="ce-link-more">
               <span>Ver todas ({TRACKS.length})</span>
               <ArrowRight size={14} />
             </Link>
           </div>
 
-          <div className="ce-tracks-grid-4">
-            {TRACKS.slice(0, 4).map(track => {
+          <div className="ce-dash-tracks-grid">
+            {featuredTracks.map(track => {
               const tp = stats.perTrack[track.id];
-              const hasStarted = tp.completedLessons > 0 || tp.completedChallenges > 0;
+              const isCompleted = tp.percent === 100;
+              const isInProgress = tp.hasEffectiveStart && !isCompleted;
+              const coverSrc = `${import.meta.env.BASE_URL}images/tracks/${track.id}.png`;
               return (
                 <SpotlightCard
                   key={track.id}
                   as="link"
                   to={`/trilhas/${track.id}`}
-                  className="ce-track-card ce-card-interactive"
+                  className="ce-track-cover-card ce-card-interactive"
                   spotlightColor={track.accentSoft}
                   style={
                     {
                       "--item-soft": track.accentSoft,
                       "--item-border": track.accentBorder,
+                      "--item-accent": track.accentSecondary,
                     } as React.CSSProperties
                   }
                 >
-                  <div className="ce-track-card-top">
-                    <TechIcon trackId={track.id} size={26} boxed />
-                    <span className="ce-badge" style={{ fontSize: 11 }}>
-                      {hasStarted ? `${tp.percent}%` : `${tp.totalLessons} aulas`}
-                    </span>
-                  </div>
-                  <div>
-                    <strong style={{ fontSize: 15, display: "block" }}>{track.name}</strong>
-                    <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 4 }}>
-                      {track.tagline}
-                    </p>
-                  </div>
-                  <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, color: track.accentSecondary, fontWeight: 600 }}>
-                    <span>{hasStarted ? "Continuar trilha" : "Explorar trilha"}</span>
-                    <ArrowRight size={14} />
+                  <img
+                    src={coverSrc}
+                    alt=""
+                    aria-hidden="true"
+                    className="ce-track-cover-bg"
+                    loading="lazy"
+                  />
+                  <div className="ce-track-cover-scrim" aria-hidden="true" />
+
+                  <div className="ce-track-cover-content">
+                    <div className="ce-track-cover-top">
+                      <TechIcon trackId={track.id} size={36} boxed />
+                      <span className="ce-track-cover-pill">
+                        {isCompleted
+                          ? "Concluída"
+                          : isInProgress
+                            ? `${tp.percent}%`
+                            : `${tp.totalLessons} aulas`}
+                      </span>
+                    </div>
+
+                    <div className="ce-track-cover-bottom">
+                      <strong className="ce-track-cover-title">{track.name}</strong>
+                      <div className="ce-track-cover-foot">
+                        <p className="ce-track-cover-desc">{track.tagline}</p>
+                        <span className="ce-track-cover-cta" style={{ color: track.accentSecondary }}>
+                          <span>
+                            {isCompleted
+                              ? "Revisar"
+                              : isInProgress
+                                ? "Continuar"
+                                : "Começar aula"}
+                          </span>
+                          <ArrowRight size={13} />
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </SpotlightCard>
               );
@@ -307,7 +312,7 @@ export const DashboardPage: React.FC = () => {
                 {animatedActivities} de {stats.totalActivities}
               </strong>
               <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
-                atividades concluídas
+                {hasStartedAny ? "atividades concluídas" : "atividades disponíveis"}
               </span>
             </div>
           </div>
@@ -365,31 +370,27 @@ export const DashboardPage: React.FC = () => {
                 }}
               />
             </div>
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-              {stats.dailyGoalPercent >= 100
-                ? "Objetivo de hoje alcançado — excelente ritmo!"
-                : "Estude no seu ritmo. A meta é apenas uma referência pessoal."}
-            </span>
+            {stats.dailyGoalPercent >= 100 && (
+              <span style={{ fontSize: 11, color: "var(--accent-success)" }}>
+                Meta de hoje alcançada!
+              </span>
+            )}
           </div>
         </section>
 
-        <section className="ce-panel">
-          <div className="ce-section-head" style={{ marginBottom: 4 }}>
-            <h2 className="ce-section-title" style={{ fontSize: 14.5 }}>
-              <History size={15} style={{ color: "var(--accent-secondary)" }} />
-              <span>Atividades recentes</span>
-            </h2>
-            <Link to="/historico" className="ce-link-more">
-              <span>Ver histórico</span>
-              <ArrowRight size={13} />
-            </Link>
-          </div>
+        {recentHistory.length > 0 && (
+          <section className="ce-panel">
+            <div className="ce-section-head" style={{ marginBottom: 4 }}>
+              <h2 className="ce-section-title" style={{ fontSize: 14.5 }}>
+                <History size={15} style={{ color: "var(--accent-secondary)" }} />
+                <span>Atividades recentes</span>
+              </h2>
+              <Link to="/historico" className="ce-link-more">
+                <span>Ver histórico</span>
+                <ArrowRight size={13} />
+              </Link>
+            </div>
 
-          {recentHistory.length === 0 ? (
-            <p style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 10 }}>
-              Nenhuma atividade registrada ainda. Execute sua primeira aula ou desafio para construir seu histórico real.
-            </p>
-          ) : (
             <div className="ce-activity-list">
               {recentHistory.map(item => {
                 const track = item.trackId ? TRACK_MAP[item.trackId] : null;
@@ -413,8 +414,8 @@ export const DashboardPage: React.FC = () => {
                 );
               })}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         <section className="ce-panel">
           <div className="ce-section-head" style={{ marginBottom: 4 }}>

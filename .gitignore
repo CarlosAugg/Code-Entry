@@ -21,3 +21,5 @@ desktop.ini
 
 # Artefatos auxiliares locais
 /repomix-output.xml
+/data/
+/public/audio/

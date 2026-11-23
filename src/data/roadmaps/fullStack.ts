@@ -1,0 +1,892 @@
+import type { RoadmapDefinition } from "../../types/roadmap";
+
+export const FULL_STACK_ROADMAP: RoadmapDefinition = {
+  id: "full-stack",
+  title: "Desenvolvimento Full Stack",
+  shortTitle: "Full Stack",
+  categoryId: "fullstack-product",
+  kind: "role",
+  scopeLabel: "Iniciante → Avançado",
+  accentColor: "#9B65FF",
+  accentSecondary: "#C084FC",
+  accentSoft: "rgba(155, 101, 255, 0.14)",
+  accentBorder: "rgba(192, 132, 252, 0.42)",
+  summary:
+    "Percorra a jornada completa da criação de produto web — começando por HTML, CSS e JavaScript no navegador até React, APIs REST, PostgreSQL, Linux, nuvem e CI/CD.",
+  audience:
+    "Quem quer construir aplicações completas de ponta a ponta e compreender como interface, API, banco e infraestrutura trabalham juntos.",
+  featured: true,
+  relatedTrackIds: ["web", "js", "database", "linux", "networks"],
+  relatedRoadmapIds: ["frontend", "backend", "systems-networks"],
+  pathways: [
+    {
+      id: "fs-mvp",
+      label: "Do Zero ao Primeiro App CRUD",
+      audience: "Entrega rápida de produto completo",
+      description:
+        "Siga os marcos essenciais: HTML → CSS → JS → Git → API REST + PostgreSQL → JWT → Checkpoint CRUD.",
+      nodeIds: [
+        "fs-html",
+        "fs-css",
+        "fs-cp-static",
+        "fs-js-interactivity",
+        "fs-cp-interactive",
+        "fs-git",
+        "fs-backend-runtime",
+        "fs-rest-api",
+        "fs-postgres-sql",
+        "fs-jwt-security",
+        "fs-cp-crud",
+      ],
+    },
+    {
+      id: "fs-cloud-ops",
+      label: "Deploy, Infraestrutura e Produção",
+      audience: "Levar a aplicação ao ar com autonomia",
+      description:
+        "Complete o ciclo em produção dominando Linux, redes/DNS, nuvem essencial, CI/CD e monitoramento.",
+      nodeIds: [
+        "fs-cp-crud",
+        "fs-linux-runtime",
+        "fs-network-infra",
+        "fs-cloud-basics",
+        "fs-cp-deploy",
+        "fs-cicd-automation",
+        "fs-monitoring",
+        "fs-project-complete",
+      ],
+    },
+  ],
+  stages: [
+    {
+      id: "fs-s1",
+      order: 1,
+      label: "Etapa 01",
+      title: "Frontend Essencial",
+      subtitle: "Base visual e interatividade no navegador.",
+    },
+    {
+      id: "fs-s2",
+      order: 2,
+      label: "Etapa 02",
+      title: "Fluxo, Pacotes & UI Moderna",
+      subtitle: "Versionamento, npm, Tailwind CSS e componentes.",
+    },
+    {
+      id: "fs-s3",
+      order: 3,
+      label: "Etapa 03",
+      title: "Backend, Dados & Segurança",
+      subtitle: "Servidor, APIs REST, PostgreSQL, JWT e cache.",
+    },
+    {
+      id: "fs-s4",
+      order: 4,
+      label: "Etapa 04",
+      title: "Infra, Nuvem & CI/CD",
+      subtitle: "Linux, redes, deploy, monitoramento e entrega contínua.",
+    },
+  ],
+  nodes: [
+    // ETAPA 01 — FRONTEND ESSENCIAL
+    {
+      id: "fs-html",
+      roadmapId: "full-stack",
+      stageId: "fs-s1",
+      column: 0,
+      title: "HTML5 Semântico e Acessibilidade",
+      shortTitle: "HTML5 Semântico",
+      kind: "foundation",
+      priority: "required",
+      summary:
+        "Estruture páginas com tags semânticas (`header`, `main`, `section`, `nav`), formulários rotulados e hierarquia acessível.",
+      whyItMatters:
+        "Toda interface web começa por um documento bem estruturado para navegadores, leitores de tela e mecanismos de busca.",
+      keyConcepts: ["Semântica HTML5", "Formulários", "Acessibilidade"],
+      glossaryIds: ["html5-semantic"],
+      prerequisites: [],
+      nextIds: ["fs-css", "fs-cp-static"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "web-01",
+          trackId: "web",
+          label: "Web 01: HTML5 Semântico",
+        },
+        {
+          kind: "lesson",
+          id: "web-02",
+          trackId: "web",
+          label: "Web 02: Links e Acessibilidade",
+        },
+      ],
+    },
+    {
+      id: "fs-css",
+      roadmapId: "full-stack",
+      stageId: "fs-s1",
+      column: 1,
+      title: "CSS, Box Model, Flexbox & Grid",
+      shortTitle: "CSS, Flex & Grid",
+      kind: "foundation",
+      priority: "required",
+      summary:
+        "Domine seletores, cascata, Box Model, Flexbox, CSS Grid e media queries para adaptar interfaces do celular ao desktop.",
+      whyItMatters:
+        "Controlar espaçamento e alinhamento com CSS moderno evita gambiarras e acelera qualquer projeto frontend.",
+      keyConcepts: ["Box Model", "Flexbox", "CSS Grid", "Responsividade"],
+      glossaryIds: ["box-model", "css-flexbox", "css-grid"],
+      prerequisites: ["fs-html"],
+      nextIds: ["fs-cp-static", "fs-js-interactivity"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "web-04",
+          trackId: "web",
+          label: "Web 04: Box Model na Prática",
+        },
+        {
+          kind: "lesson",
+          id: "web-05",
+          trackId: "web",
+          label: "Web 05: Flex, Grid e @media",
+        },
+      ],
+    },
+    {
+      id: "fs-cp-static",
+      roadmapId: "full-stack",
+      stageId: "fs-s1",
+      column: 1,
+      title: "Checkpoint: Páginas Web Estáticas",
+      shortTitle: "Checkpoint Estático",
+      kind: "checkpoint",
+      priority: "required",
+      summary:
+        "Publique páginas estáticas limpas com navegação, formulários rotulados e layout responsivo antes de introduzir scripts complexos.",
+      whyItMatters:
+        "Consolidar layout estático primeiro evita misturar bugs visuais com bugs de lógica.",
+      keyConcepts: ["Layout estático", "Grid responsivo"],
+      glossaryIds: ["responsive-viewport", "aria-accessibility"],
+      prerequisites: ["fs-html", "fs-css"],
+      nextIds: ["fs-js-interactivity"],
+      projectIdeas: [
+        "Página de apresentação responsiva com cabeçalho, grade de recursos e formulário de contato.",
+      ],
+      studyLinks: [
+        {
+          kind: "challenge",
+          id: "ch-web-1",
+          trackId: "web",
+          label: "Desafio Web: Cartão Semântico",
+        },
+        {
+          kind: "challenge",
+          id: "ch-web-2",
+          trackId: "web",
+          label: "Desafio Web: Grade CSS Grid",
+        },
+      ],
+    },
+    {
+      id: "fs-js-interactivity",
+      roadmapId: "full-stack",
+      stageId: "fs-s1",
+      column: 2,
+      title: "JavaScript, DOM e Eventos",
+      shortTitle: "JavaScript & DOM",
+      kind: "concept",
+      priority: "required",
+      summary:
+        "Manipule elementos na tela com DOM, escute eventos do usuário e transforme listas com `map`, `filter` e `reduce`.",
+      whyItMatters:
+        "JavaScript é a linguagem nativa do navegador e a base para qualquer biblioteca ou backend em Node.js.",
+      keyConcepts: ["DOM", "Eventos", "Arrays & Objetos"],
+      glossaryIds: ["dom-api", "javascript-es6"],
+      prerequisites: ["fs-css"],
+      nextIds: ["fs-fetch-apis", "fs-cp-interactive"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "web-06",
+          trackId: "web",
+          label: "Web 06: JS e DOM",
+        },
+        {
+          kind: "track",
+          id: "js",
+          trackId: "js",
+          label: "Trilha JavaScript",
+        },
+      ],
+    },
+    {
+      id: "fs-fetch-apis",
+      roadmapId: "full-stack",
+      stageId: "fs-s1",
+      column: 0,
+      title: "Consumo de APIs Assíncronas (Fetch)",
+      shortTitle: "Fetch & Assincronia",
+      kind: "concept",
+      priority: "required",
+      summary:
+        "Entenda `Promise`, `async/await`, requisições HTTP com `fetch`, leitura de JSON e tratamento de erros de rede.",
+      whyItMatters:
+        "É a ponte que conecta o frontend aos dados reais servidos pelo backend.",
+      keyConcepts: ["async/await", "fetch", "JSON"],
+      glossaryIds: ["rest-api"],
+      prerequisites: ["fs-js-interactivity"],
+      nextIds: ["fs-cp-interactive", "fs-git"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "web-07",
+          trackId: "web",
+          label: "Web 07: Eventos e Estado",
+        },
+      ],
+    },
+    {
+      id: "fs-cp-interactive",
+      roadmapId: "full-stack",
+      stageId: "fs-s1",
+      column: 0,
+      title: "Checkpoint: App Web Interativo",
+      shortTitle: "Checkpoint Interativo",
+      kind: "checkpoint",
+      priority: "required",
+      summary:
+        "Crie aplicações no navegador que validam entradas, atualizam listas em tempo real e persistem rascunhos localmente.",
+      whyItMatters:
+        "Valida que você já domina estado, eventos e atualização do DOM sem depender de frameworks.",
+      keyConcepts: ["Estado em memória", "Validação de formulário"],
+      glossaryIds: ["dom-api"],
+      prerequisites: ["fs-js-interactivity", "fs-fetch-apis"],
+      nextIds: ["fs-git"],
+      projectIdeas: [
+        "Lista de estudos interativa com filtros, contador dinâmico e alternância de tema.",
+      ],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "web-08",
+          trackId: "web",
+          label: "Web 08: App Interativo Completo",
+        },
+        {
+          kind: "challenge",
+          id: "ch-web-3",
+          trackId: "web",
+          label: "Desafio Web: Tema e Contador",
+        },
+      ],
+    },
+
+    // ETAPA 02 — FLUXO, PACOTES & UI MODERNA
+    {
+      id: "fs-git",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 1,
+      title: "Git e Controle de Versão",
+      shortTitle: "Git & Commits",
+      kind: "technology",
+      priority: "required",
+      summary:
+        "Controle histórico de alterações com `init`, `status`, `add`, `commit`, `branch` e resolução de conflitos.",
+      whyItMatters:
+        "Sem controle de versão, qualquer erro pode destruir horas de trabalho e impede colaborar em equipe.",
+      keyConcepts: ["Commits", "Branches", "Merge"],
+      glossaryIds: ["git-vcs"],
+      prerequisites: ["fs-cp-interactive"],
+      nextIds: ["fs-github"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "linux-03",
+          trackId: "linux",
+          label: "Linux 03: Arquivos e Fluxo CLI",
+        },
+      ],
+    },
+    {
+      id: "fs-github",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 2,
+      title: "GitHub e Pull Requests",
+      shortTitle: "GitHub & PRs",
+      kind: "technology",
+      priority: "required",
+      summary:
+        "Publique repositórios remotos, abra Pull Requests, revise código em equipe e mantenha READMEs claros.",
+      whyItMatters:
+        "GitHub é o padrão da indústria para colaboração, revisão de código e portfólio técnico.",
+      keyConcepts: ["Repositório remoto", "Pull Request", "Code Review"],
+      glossaryIds: ["git-vcs"],
+      prerequisites: ["fs-git"],
+      nextIds: ["fs-cp-collab", "fs-npm"],
+      studyLinks: [
+        {
+          kind: "lab",
+          id: "linux",
+          trackId: "linux",
+          label: "Praticar Terminal no Lab",
+        },
+      ],
+    },
+    {
+      id: "fs-cp-collab",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 2,
+      title: "Checkpoint: Portfólio no GitHub",
+      shortTitle: "Checkpoint GitHub",
+      kind: "checkpoint",
+      priority: "recommended",
+      summary:
+        "Organize seus projetos anteriores em repositórios limpos no GitHub com README, capturas de tela e histórico de commits.",
+      whyItMatters:
+        "Transforma exercícios soltos em código versionado e apresentável.",
+      keyConcepts: ["README", "Versionamento limpo"],
+      glossaryIds: ["git-vcs"],
+      prerequisites: ["fs-github"],
+      nextIds: ["fs-npm"],
+      projectIdeas: [
+        "Publicar os projetos estático e interativo no GitHub com branches e README.",
+      ],
+      studyLinks: [],
+    },
+    {
+      id: "fs-npm",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 0,
+      title: "npm e Ecossistema de Pacotes",
+      shortTitle: "npm & Pacotes",
+      kind: "technology",
+      priority: "recommended",
+      summary:
+        "Gerencie dependências com `package.json`, scripts de build, versionamento semântico e bibliotecas de terceiros.",
+      whyItMatters:
+        "Praticamente todo projeto web moderno usa gerenciadores de pacotes para reaproveitar soluções testadas.",
+      keyConcepts: ["package.json", "SemVer", "Scripts npm"],
+      glossaryIds: ["javascript-es6"],
+      prerequisites: ["fs-github"],
+      nextIds: ["fs-cp-packages", "fs-tailwind"],
+      studyLinks: [
+        {
+          kind: "track",
+          id: "js",
+          trackId: "js",
+          label: "Trilha JavaScript",
+        },
+      ],
+    },
+    {
+      id: "fs-cp-packages",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 0,
+      title: "Checkpoint: Pacotes Externos",
+      shortTitle: "Checkpoint Pacotes",
+      kind: "checkpoint",
+      priority: "optional",
+      summary:
+        "Instale e integre bibliotecas externas via npm para resolver ícones, datas ou gráficos sem reinventar a roda.",
+      whyItMatters:
+        "Ensina a avaliar dependências e configurar builds modernos.",
+      keyConcepts: ["Dependências", "Bundling"],
+      glossaryIds: ["javascript-es6"],
+      prerequisites: ["fs-npm"],
+      nextIds: ["fs-tailwind"],
+      projectIdeas: [
+        "Projeto web usando pacotes npm de ícones e formatação com script de build.",
+      ],
+      studyLinks: [],
+    },
+    {
+      id: "fs-tailwind",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 1,
+      title: "Tailwind CSS e Design Tokens",
+      shortTitle: "Tailwind CSS",
+      kind: "technology",
+      priority: "recommended",
+      summary:
+        "Construa interfaces consistentes rapidamente usando classes utilitárias, tokens de cor e variantes responsivas.",
+      whyItMatters:
+        "Padroniza espaçamento, tipografia e temas sem conflitos de seletores CSS globais.",
+      keyConcepts: ["Classes utilitárias", "Design Tokens", "Responsividade"],
+      glossaryIds: ["css-flexbox"],
+      prerequisites: ["fs-npm"],
+      nextIds: ["fs-react"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "web-03",
+          trackId: "web",
+          label: "Web 03: CSS, Cores e Tipografia",
+        },
+      ],
+    },
+    {
+      id: "fs-react",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 2,
+      title: "React e Componentes Reutilizáveis",
+      shortTitle: "React",
+      kind: "alternative-group",
+      priority: "recommended",
+      summary:
+        "Estruture interfaces complexas com componentes, props, estado reativo e sincronização com APIs.",
+      whyItMatters:
+        "Escala o frontend quando a aplicação cresce além de poucas telas isoladas.",
+      keyConcepts: ["Componentes", "Props & Estado", "Hooks"],
+      glossaryIds: ["dom-api"],
+      alternatives: [
+        {
+          id: "alt-fs-react",
+          name: "React",
+          priority: "recommended",
+          summary: "Ecossistema amplo com componentes declarativos e grande demanda no mercado.",
+          whenToChoose: "Quando quiser máximo mercado e ecossistema maduro.",
+        },
+        {
+          id: "alt-fs-vanilla",
+          name: "Vue.js",
+          priority: "optional",
+          summary: "Templates HTML declarativos e curva de aprendizado suave.",
+          whenToChoose: "Para projetos enxutos ou times que preferem templates HTML.",
+        },
+      ],
+      prerequisites: ["fs-tailwind"],
+      nextIds: ["fs-cp-frontend", "fs-backend-runtime"],
+      studyLinks: [
+        {
+          kind: "lab",
+          id: "web",
+          trackId: "web",
+          label: "Laboratório Web (HTML/CSS/JS)",
+        },
+      ],
+    },
+    {
+      id: "fs-cp-frontend",
+      roadmapId: "full-stack",
+      stageId: "fs-s2",
+      column: 2,
+      title: "Checkpoint: Aplicação Frontend",
+      shortTitle: "Checkpoint Frontend",
+      kind: "checkpoint",
+      priority: "recommended",
+      summary:
+        "Entregue uma SPA com múltiplas visões, componentes reutilizáveis e consumo de API externa.",
+      whyItMatters:
+        "Fecha o ciclo completo do frontend antes de entrar no servidor.",
+      keyConcepts: ["SPA", "Componentização"],
+      glossaryIds: ["dom-api"],
+      prerequisites: ["fs-react"],
+      nextIds: ["fs-backend-runtime"],
+      projectIdeas: [
+        "Catálogo ou painel interativo em componentes consumindo uma API pública.",
+      ],
+      studyLinks: [],
+    },
+
+    // ETAPA 03 — BACKEND, DADOS & SEGURANÇA
+    {
+      id: "fs-backend-runtime",
+      roadmapId: "full-stack",
+      stageId: "fs-s3",
+      column: 0,
+      title: "Runtime de Servidor (Node.js ou Python)",
+      shortTitle: "Node.js",
+      kind: "alternative-group",
+      priority: "required",
+      summary:
+        "Execute lógica no servidor para validar regras de negócio, acessar arquivos, variáveis de ambiente e bancos de dados.",
+      whyItMatters:
+        "O navegador não é confiável para guardar segredos nem validar regras críticas.",
+      keyConcepts: ["Runtime servidor", "Módulos", "Variáveis de ambiente"],
+      glossaryIds: ["rest-api"],
+      alternatives: [
+        {
+          id: "alt-fs-node",
+          name: "Node.js (JavaScript/TypeScript)",
+          priority: "recommended",
+          summary: "Mesma linguagem do frontend rodando no servidor com ótimo desempenho em I/O.",
+          whenToChoose: "Para manter JavaScript/TypeScript de ponta a ponta.",
+        },
+        {
+          id: "alt-fs-python",
+          name: "Python (FastAPI / Flask)",
+          priority: "recommended",
+          summary: "Sintaxe limpa e forte integração com automação e dados.",
+          whenToChoose: "Quando o projeto envolve dados ou preferência por Python.",
+        },
+      ],
+      prerequisites: ["fs-react"],
+      nextIds: ["fs-cp-cli", "fs-rest-api"],
+      studyLinks: [
+        {
+          kind: "track",
+          id: "js",
+          trackId: "js",
+          label: "Trilha JavaScript",
+        },
+        {
+          kind: "track",
+          id: "python",
+          trackId: "python",
+          label: "Trilha Python",
+        },
+      ],
+    },
+    {
+      id: "fs-cp-cli",
+      roadmapId: "full-stack",
+      stageId: "fs-s3",
+      column: 0,
+      title: "Checkpoint: Scripts & Ferramentas CLI",
+      shortTitle: "Checkpoint CLI",
+      kind: "checkpoint",
+      priority: "optional",
+      summary:
+        "Construa uma ferramenta de linha de comando que lê arquivos, processa dados e gera relatórios no terminal.",
+      whyItMatters:
+        "Treina o raciocínio de backend sem a complexidade inicial de HTTP e banco.",
+      keyConcepts: ["CLI", "Arquivos", "Automação"],
+      glossaryIds: ["linux-cli"],
+      prerequisites: ["fs-backend-runtime"],
+      nextIds: ["fs-rest-api"],
+      projectIdeas: [
+        "Gerador de relatório de vendas ou tarefas em terminal lendo JSON/CSV.",
+      ],
+      studyLinks: [
+        {
+          kind: "challenge",
+          id: "ch-py-1",
+          trackId: "python",
+          label: "Desafio Python: Frequência de Texto",
+        },
+      ],
+    },
+    {
+      id: "fs-rest-api",
+      roadmapId: "full-stack",
+      stageId: "fs-s3",
+      column: 1,
+      title: "APIs RESTful, Rotas e Status HTTP",
+      shortTitle: "APIs REST & HTTP",
+      kind: "concept",
+      priority: "required",
+      summary:
+        "Modele recursos com verbos `GET`, `POST`, `PUT`, `DELETE`, códigos HTTP adequados (200, 201, 400, 404) e validação de payloads.",
+      whyItMatters:
+        "Contratos HTTP claros permitem que web, mobile e integrações conversem com o mesmo servidor.",
+      keyConcepts: ["Métodos HTTP", "Status Codes", "Rotas REST"],
+      glossaryIds: ["rest-api"],
+      prerequisites: ["fs-backend-runtime"],
+      nextIds: ["fs-postgres-sql"],
+      studyLinks: [
+        {
+          kind: "track",
+          id: "js",
+          trackId: "js",
+          label: "JavaScript: Pipelines e Dados",
+        },
+      ],
+    },
+    {
+      id: "fs-postgres-sql",
+      roadmapId: "full-stack",
+      stageId: "fs-s3",
+      column: 2,
+      title: "PostgreSQL, Modelagem Relacional & SQL",
+      shortTitle: "PostgreSQL & SQL",
+      kind: "concept",
+      priority: "required",
+      summary:
+        "Modele tabelas, chaves primárias/estrangeiras, consultas `SELECT`, `JOIN`, agregações e operações `INSERT/UPDATE/DELETE`.",
+      whyItMatters:
+        "Dados reais exigem consistência, relacionamentos bem definidos e consultas eficientes.",
+      keyConcepts: ["DDL & DML", "JOINs", "Chaves & Índices"],
+      glossaryIds: ["sql-relational", "sql-join"],
+      prerequisites: ["fs-rest-api"],
+      nextIds: ["fs-jwt-security"],
+      studyLinks: [
+        {
+          kind: "track",
+          id: "database",
+          trackId: "database",
+          label: "Trilha Banco de Dados (SQL)",
+        },
+        {
+          kind: "lesson",
+          id: "db-08",
+          trackId: "database",
+          label: "SQL 08: DDL e DML",
+        },
+      ],
+    },
+    {
+      id: "fs-jwt-security",
+      roadmapId: "full-stack",
+      stageId: "fs-s3",
+      column: 0,
+      title: "Autenticação JWT, Sessões e Segurança",
+      shortTitle: "Auth JWT & Segurança",
+      kind: "concept",
+      priority: "required",
+      summary:
+        "Proteja rotas com hash de senha, tokens JWT/cookies `HttpOnly`, controle de acesso e proteção contra XSS e SQL Injection.",
+      whyItMatters:
+        "Uma aplicação exposta na internet sem autenticação e sanitização corretas compromete dados de todos os usuários.",
+      keyConcepts: ["JWT", "Hash de senha", "Autorização"],
+      glossaryIds: ["jwt-token"],
+      prerequisites: ["fs-postgres-sql"],
+      nextIds: ["fs-cp-crud", "fs-redis-cache"],
+      studyLinks: [],
+    },
+    {
+      id: "fs-cp-crud",
+      roadmapId: "full-stack",
+      stageId: "fs-s3",
+      column: 1,
+      title: "Checkpoint: App CRUD Autenticado",
+      shortTitle: "Checkpoint CRUD",
+      kind: "checkpoint",
+      priority: "required",
+      summary:
+        "Conecte frontend, API REST e banco SQL em um fluxo completo de cadastro, login e CRUD persistido.",
+      whyItMatters:
+        "É o marco em que você deixa de fazer telas isoladas e constrói um sistema Full Stack de verdade.",
+      keyConcepts: ["CRUD completo", "Auth + Banco"],
+      glossaryIds: ["rest-api", "sql-relational"],
+      prerequisites: ["fs-jwt-security"],
+      nextIds: ["fs-redis-cache", "fs-linux-runtime"],
+      projectIdeas: [
+        "Gerenciador de tarefas ou finanças com login JWT, API REST e banco relacional.",
+      ],
+      studyLinks: [
+        {
+          kind: "challenge",
+          id: "ch-db-3",
+          trackId: "database",
+          label: "Desafio SQL: JOIN Triplo",
+        },
+      ],
+    },
+    {
+      id: "fs-redis-cache",
+      roadmapId: "full-stack",
+      stageId: "fs-s3",
+      column: 2,
+      title: "Cache em Memória com Redis",
+      shortTitle: "Cache com Redis",
+      kind: "technology",
+      priority: "optional",
+      summary:
+        "Acelere respostas frequentes armazenando sessões, contadores e consultas repetidas em cache chave-valor com TTL.",
+      whyItMatters:
+        "Reduz drasticamente a carga no banco principal quando o tráfego aumenta.",
+      keyConcepts: ["Chave-valor", "TTL", "Invalidação de cache"],
+      glossaryIds: ["redis-cache"],
+      prerequisites: ["fs-jwt-security"],
+      nextIds: ["fs-linux-runtime"],
+      studyLinks: [],
+    },
+
+    // ETAPA 04 — INFRA, NUVEM & CI/CD
+    {
+      id: "fs-linux-runtime",
+      roadmapId: "full-stack",
+      stageId: "fs-s4",
+      column: 0,
+      title: "Linux, Terminal, Permissões e Serviços",
+      shortTitle: "Linux & Terminal",
+      kind: "concept",
+      priority: "required",
+      summary:
+        "Navegue no servidor via SSH, gerencie arquivos, permissões (`chmod`), processos, logs e serviços em background.",
+      whyItMatters:
+        "Quase toda infraestrutura web roda em Linux — saber operar o terminal te dá autonomia total no deploy.",
+      keyConcepts: ["Shell", "Permissões", "Processos & Logs"],
+      glossaryIds: ["linux-cli"],
+      prerequisites: ["fs-cp-crud"],
+      nextIds: ["fs-network-infra"],
+      studyLinks: [
+        {
+          kind: "track",
+          id: "linux",
+          trackId: "linux",
+          label: "Trilha Linux",
+        },
+      ],
+    },
+    {
+      id: "fs-network-infra",
+      roadmapId: "full-stack",
+      stageId: "fs-s4",
+      column: 1,
+      title: "Redes, DNS, Portas e Firewall",
+      shortTitle: "Redes, DNS & Firewall",
+      kind: "concept",
+      priority: "required",
+      summary:
+        "Configure resolução DNS, portas TCP/HTTPS, proxy reverso, sub-redes e regras de firewall para expor serviços com segurança.",
+      whyItMatters:
+        "Entender DNS, portas e firewall resolve 80% dos problemas de 'funcionava na minha máquina'.",
+      keyConcepts: ["DNS", "Portas TCP/HTTPS", "Firewall"],
+      glossaryIds: ["dns-resolution", "cidr-subnet"],
+      prerequisites: ["fs-linux-runtime"],
+      nextIds: ["fs-cloud-basics"],
+      studyLinks: [
+        {
+          kind: "track",
+          id: "networks",
+          trackId: "networks",
+          label: "Trilha Redes de Computadores",
+        },
+      ],
+    },
+    {
+      id: "fs-cloud-basics",
+      roadmapId: "full-stack",
+      stageId: "fs-s4",
+      column: 2,
+      title: "Nuvem Essencial (VPS, Storage & VPC)",
+      shortTitle: "Nuvem & Servidores",
+      kind: "concept",
+      priority: "recommended",
+      summary:
+        "Provisione instâncias de computação, armazenamento de arquivos (S3/Buckets), redes privadas (VPC) e envio de e-mails transacionais.",
+      whyItMatters:
+        "Conecta o código local a serviços gerenciados confiáveis em produção.",
+      keyConcepts: ["Computação (VPS/EC2)", "Object Storage", "VPC"],
+      glossaryIds: ["dns-resolution"],
+      prerequisites: ["fs-network-infra"],
+      nextIds: ["fs-cp-deploy", "fs-cicd-automation"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "net-07",
+          trackId: "networks",
+          label: "Redes 07: DNS e DMZ",
+        },
+      ],
+    },
+    {
+      id: "fs-cp-deploy",
+      roadmapId: "full-stack",
+      stageId: "fs-s4",
+      column: 2,
+      title: "Checkpoint: Deploy em Produção",
+      shortTitle: "Checkpoint Deploy",
+      kind: "checkpoint",
+      priority: "recommended",
+      summary:
+        "Publique sua aplicação com domínio próprio, HTTPS ativo e variáveis de ambiente isoladas na nuvem.",
+      whyItMatters:
+        "Coloca o produto nas mãos de usuários reais fora do `localhost`.",
+      keyConcepts: ["HTTPS", "Domínio", "Produção"],
+      glossaryIds: ["dns-resolution"],
+      prerequisites: ["fs-cloud-basics"],
+      nextIds: ["fs-cicd-automation"],
+      projectIdeas: [
+        "Subir frontend + backend + banco com domínio configurado e HTTPS.",
+      ],
+      studyLinks: [],
+    },
+    {
+      id: "fs-cicd-automation",
+      roadmapId: "full-stack",
+      stageId: "fs-s4",
+      column: 1,
+      title: "CI/CD & GitHub Actions",
+      shortTitle: "CI/CD & Actions",
+      kind: "technology",
+      priority: "recommended",
+      summary:
+        "Automatize testes, checagem de tipos, build e deploy contínuo a cada push ou Pull Request.",
+      whyItMatters:
+        "Reduz erro humano no deploy e garante que apenas código validado chegue à produção.",
+      keyConcepts: ["CI/CD", "Workflows", "Automação"],
+      glossaryIds: ["ci-cd-pipeline"],
+      prerequisites: ["fs-cloud-basics"],
+      nextIds: ["fs-monitoring", "fs-project-complete"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "linux-06",
+          trackId: "linux",
+          label: "Linux 06: Scripts Automatizados",
+        },
+      ],
+    },
+    {
+      id: "fs-monitoring",
+      roadmapId: "full-stack",
+      stageId: "fs-s4",
+      column: 0,
+      title: "Logs, Alertas e Monitoramento",
+      shortTitle: "Monitoramento",
+      kind: "concept",
+      priority: "optional",
+      summary:
+        "Acompanhe uso de CPU, memória, saúde de endpoints e logs estruturados para detectar falhas antes dos usuários.",
+      whyItMatters:
+        "Aplicações em produção precisam de observabilidade para diagnóstico rápido de incidentes.",
+      keyConcepts: ["Logs", "Health Check", "Métricas"],
+      glossaryIds: ["ci-cd-pipeline"],
+      prerequisites: ["fs-cicd-automation"],
+      nextIds: ["fs-project-complete"],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "linux-08",
+          trackId: "linux",
+          label: "Linux 08: Diagnóstico de Incidentes",
+        },
+      ],
+    },
+    {
+      id: "fs-project-complete",
+      roadmapId: "full-stack",
+      stageId: "fs-s4",
+      column: 1,
+      title: "Projeto Final: Full Stack em Produção",
+      shortTitle: "Projeto Completo",
+      kind: "project",
+      priority: "required",
+      summary:
+        "Integre interface responsiva, API REST autenticada, PostgreSQL, testes automatizados, CI/CD e deploy monitorado.",
+      whyItMatters:
+        "Consolida todo o roadmap em uma entrega de nível profissional para o seu portfólio.",
+      keyConcepts: ["Produto ponta a ponta", "Produção", "CI/CD"],
+      glossaryIds: ["rest-api", "sql-relational", "ci-cd-pipeline"],
+      prerequisites: ["fs-cicd-automation", "fs-monitoring"],
+      nextIds: [],
+      projectIdeas: [
+        "Plataforma SaaS completa com dashboard, API REST, banco SQL, CI/CD e deploy ativo.",
+      ],
+      studyLinks: [
+        {
+          kind: "lesson",
+          id: "web-08",
+          trackId: "web",
+          label: "Web 08: App Interativo",
+        },
+        {
+          kind: "lab",
+          id: "database",
+          trackId: "database",
+          label: "Laboratório SQL",
+        },
+      ],
+    },
+  ],
+};

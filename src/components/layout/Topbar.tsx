@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, HelpCircle, Maximize2, Menu, Minimize2, Moon, Search, Sun, X } from "lucide-react";
+import { BookOpen, Maximize2, Menu, Minimize2, Search, X } from "lucide-react";
 import { CHALLENGES } from "../../data/challenges";
 import { ALL_LESSONS } from "../../data/lessons";
+import { ROADMAPS, getAllRoadmapProjects } from "../../data/roadmaps";
 import { TRACK_MAP, TRACKS } from "../../data/tracks";
 import { usePlatform } from "../../context/PlatformContext";
-import { Tooltip } from "../shared/Tooltip";
 import { UserMenuPopover } from "./UserMenuPopover";
 
 interface TopbarProps {
@@ -13,7 +13,7 @@ interface TopbarProps {
 }
 
 interface SearchHit {
-  kind: "Trilha" | "Aula" | "Desafio";
+  kind: "Trilha" | "Aula" | "Desafio" | "Roadmap" | "Projeto" | "Tópico";
   title: string;
   subtitle: string;
   to: string;
@@ -21,7 +21,7 @@ interface SearchHit {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
-  const { data, toggleTheme, openReferenceFor, startTour } = usePlatform();
+  const { data, openReferenceFor } = usePlatform();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
@@ -64,6 +64,20 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
         });
       }
     }
+
+    for (const { node, roadmap } of getAllRoadmapProjects()) {
+      const projHay = `${node.title} ${node.summary} ${node.keyConcepts.join(" ")} ${(node.projectIdeas || []).join(" ")}`.toLowerCase();
+      if (projHay.includes(q)) {
+        hits.push({
+          kind: "Projeto",
+          title: node.title,
+          subtitle: `Projeto · Roadmap ${roadmap.shortTitle}`,
+          to: `/projetos?destaque=${node.id}`,
+          accent: roadmap.accentColor,
+        });
+      }
+    }
+
     for (const l of ALL_LESSONS) {
       if (`${l.title} ${l.subtitle} ${l.moduleTitle}`.toLowerCase().includes(q)) {
         const track = TRACK_MAP[l.trackId];
@@ -88,7 +102,40 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
         });
       }
     }
-    return hits.slice(0, 9);
+
+    for (const rm of ROADMAPS) {
+      if (`${rm.title} ${rm.shortTitle} ${rm.summary} ${rm.scopeLabel}`.toLowerCase().includes(q)) {
+        hits.push({
+          kind: "Roadmap",
+          title: rm.title,
+          subtitle: `Roadmap · ${rm.scopeLabel} · ${rm.nodes.length} tópicos`,
+          to: `/roadmaps/${rm.id}`,
+          accent: rm.accentColor,
+        });
+      }
+
+      for (const node of rm.nodes) {
+        if (node.kind === "project" || node.kind === "checkpoint") continue;
+        const nodeHay = `${node.title} ${node.summary} ${node.keyConcepts.join(" ")}`.toLowerCase();
+        if (nodeHay.includes(q)) {
+          hits.push({
+            kind: "Tópico",
+            title: node.title,
+            subtitle: `Roadmap ${rm.shortTitle} · ${
+              node.priority === "required"
+                ? "Obrigatório"
+                : node.priority === "optional"
+                  ? "Opcional"
+                  : "Recomendado"
+            }`,
+            to: `/roadmaps/${rm.id}?topico=${node.id}`,
+            accent: rm.accentColor,
+          });
+        }
+      }
+    }
+
+    return hits.slice(0, 10);
   }, [query]);
 
   const handleToggleFullscreen = async () => {
@@ -117,78 +164,78 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
         >
           <Menu size={18} />
         </button>
+      </div>
 
-        <div className="ce-search-box" ref={searchWrapRef}>
-          <div className="ce-search-input-wrap">
-            <Search size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} aria-hidden="true" />
-            <input
-              type="search"
-              className="ce-search-input"
-              placeholder="Buscar por trilhas, aulas, desafios ou conceitos..."
-              value={query}
-              onFocus={() => setSearchFocused(true)}
-              onChange={e => {
-                setQuery(e.target.value);
-                setSearchFocused(true);
-              }}
-              onKeyDown={e => {
-                if (e.key === "Enter" && searchHits.length > 0) {
-                  navigate(searchHits[0].to);
-                  setSearchFocused(false);
-                } else if (e.key === "Escape") {
-                  setSearchFocused(false);
-                }
-              }}
-              aria-label="Buscar conteúdo na plataforma"
-            />
-            {query && (
-              <button
-                type="button"
-                style={{ border: 0, background: "transparent", color: "var(--text-muted)", padding: 2 }}
-                onClick={() => setQuery("")}
-                aria-label="Limpar busca"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          {searchFocused && query.trim().length > 0 && (
-            <div className="ce-search-results" role="listbox" aria-label="Resultados da busca">
-              {searchHits.length === 0 ? (
-                <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-muted)" }}>
-                  Nenhum resultado encontrado para "{query}".
-                </div>
-              ) : (
-                searchHits.map(hit => (
-                  <button
-                    key={`${hit.kind}-${hit.to}`}
-                    type="button"
-                    className="ce-search-item"
-                    onClick={() => {
-                      navigate(hit.to);
-                      setSearchFocused(false);
-                      setQuery("");
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-primary)" }}>
-                        {hit.title}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{hit.subtitle}</div>
-                    </div>
-                    <span
-                      className="ce-badge"
-                      style={{ borderColor: hit.accent, color: hit.accent, flexShrink: 0 }}
-                    >
-                      {hit.kind}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
+      <div className="ce-search-box" data-tour="topbar-search" ref={searchWrapRef}>
+        <div className="ce-search-input-wrap">
+          <Search size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} aria-hidden="true" />
+          <input
+            type="search"
+            className="ce-search-input"
+            placeholder="Buscar trilhas, roadmaps, projetos, aulas ou conceitos..."
+            value={query}
+            onFocus={() => setSearchFocused(true)}
+            onChange={e => {
+              setQuery(e.target.value);
+              setSearchFocused(true);
+            }}
+            onKeyDown={e => {
+              if (e.key === "Enter" && searchHits.length > 0) {
+                navigate(searchHits[0].to);
+                setSearchFocused(false);
+              } else if (e.key === "Escape") {
+                setSearchFocused(false);
+              }
+            }}
+            aria-label="Buscar conteúdo na plataforma"
+          />
+          {query && (
+            <button
+              type="button"
+              style={{ border: 0, background: "transparent", color: "var(--text-muted)", padding: 2 }}
+              onClick={() => setQuery("")}
+              aria-label="Limpar busca"
+            >
+              <X size={14} />
+            </button>
           )}
         </div>
+
+        {searchFocused && query.trim().length > 0 && (
+          <div className="ce-search-results" role="listbox" aria-label="Resultados da busca">
+            {searchHits.length === 0 ? (
+              <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--text-muted)" }}>
+                Nenhum resultado encontrado para "{query}".
+              </div>
+            ) : (
+              searchHits.map(hit => (
+                <button
+                  key={`${hit.kind}-${hit.to}`}
+                  type="button"
+                  className="ce-search-item"
+                  onClick={() => {
+                    navigate(hit.to);
+                    setSearchFocused(false);
+                    setQuery("");
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--text-primary)" }}>
+                      {hit.title}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>{hit.subtitle}</div>
+                  </div>
+                  <span
+                    className="ce-badge"
+                    style={{ borderColor: hit.accent, color: hit.accent, flexShrink: 0 }}
+                  >
+                    {hit.kind}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       <div className="ce-topbar-actions">
@@ -197,32 +244,11 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
           data-tour="topbar-reference"
           className="ce-pill-btn"
           onClick={() => openReferenceFor(data.settings.activeTrackId || "logic")}
-          title="Abrir guia rápido de sintaxe e atalhos"
-          aria-label="Referência rápida"
+          title="Abrir manual rápido de sintaxe e atalhos"
+          aria-label="Manual rápido"
         >
           <BookOpen size={15} style={{ color: "var(--accent-secondary)" }} aria-hidden="true" />
-          <span className="ce-hide-mobile">Referência</span>
-        </button>
-
-        <Tooltip content="Tour guiado da plataforma" side="bottom">
-          <button
-            type="button"
-            className="ce-icon-btn"
-            onClick={startTour}
-            aria-label="Iniciar tour guiado"
-          >
-            <HelpCircle size={16} />
-          </button>
-        </Tooltip>
-
-        <button
-          type="button"
-          className="ce-icon-btn"
-          onClick={() => toggleTheme()}
-          title={data.settings.theme === "dark" ? "Alternar para tema claro" : "Alternar para tema escuro"}
-          aria-label="Alternar tema"
-        >
-          {data.settings.theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          <span className="ce-hide-mobile">Manual</span>
         </button>
 
         <button
@@ -243,7 +269,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
             onClick={() => setMenuOpen(o => !o)}
             aria-expanded={menuOpen}
             aria-label="Menu do estudante e configurações"
-            title={`Configurações (${data.settings.displayName})`}
+            title={`Perfil e preferências (${data.settings.displayName})`}
           >
             {initial}
           </button>

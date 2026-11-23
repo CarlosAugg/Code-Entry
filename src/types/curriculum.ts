@@ -1,4 +1,4 @@
-export type TrackId = "logic" | "cpp" | "js" | "python" | "linux" | "networks" | "database";
+export type TrackId = "logic" | "cpp" | "js" | "python" | "web" | "linux" | "networks" | "database";
 
 export type DifficultyLevel =
   | "Muito fácil"
@@ -7,7 +7,7 @@ export type DifficultyLevel =
   | "Difícil"
   | "Avançado";
 
-export type WorkbenchKind = "code" | "linux" | "sql" | "networks";
+export type WorkbenchKind = "code" | "web" | "linux" | "sql" | "networks";
 
 export type NetworkWorkbenchMode = "osi" | "subnet" | "topology";
 
@@ -86,6 +86,66 @@ export interface TestCaseResult {
   error?: string;
 }
 
+export interface WebProjectFiles {
+  html: string;
+  css: string;
+  js: string;
+}
+
+export interface WebConsoleEntry {
+  level: "log" | "info" | "warn" | "error";
+  text: string;
+  timestamp?: number;
+}
+
+export interface WebInteractionSpec {
+  id: string;
+  clickSelector?: string;
+  times?: number;
+  fillSelector?: string;
+  fillValue?: string;
+  submitSelector?: string;
+  observeSelector: string;
+}
+
+export interface WebInspectionSpec {
+  selectors: string[];
+  styleProps?: string[];
+  interactions?: WebInteractionSpec[];
+}
+
+export interface WebElementReport {
+  count: number;
+  text: string;
+  html: string;
+  attrs: Record<string, string>;
+  classes: string[];
+  styles: Record<string, string>;
+  value?: string;
+}
+
+export interface WebInteractionReport {
+  ok: boolean;
+  text?: string;
+  count?: number;
+  classes?: string[];
+  value?: string;
+  error?: string;
+}
+
+export interface WebEvaluationState {
+  files: WebProjectFiles;
+  title: string;
+  lang: string;
+  bodyText: string;
+  elementCount: number;
+  consoleEntries: WebConsoleEntry[];
+  runtimeErrors: string[];
+  queries: Record<string, WebElementReport>;
+  interactions: Record<string, WebInteractionReport>;
+  timedOut?: boolean;
+}
+
 export interface EvaluationContext {
   trackId: TrackId;
   code: string;
@@ -101,6 +161,7 @@ export interface EvaluationContext {
   sql?: SqlResultData;
   linux?: LinuxSnapshotData;
   network?: NetworkEvaluationState;
+  web?: WebEvaluationState;
 }
 
 export interface ObjectiveRule {
@@ -142,6 +203,7 @@ export interface Lesson {
   sqlDatasetId?: "ecommerce" | "empresa";
   networkMode?: NetworkWorkbenchMode;
   networkPreset?: Record<string, unknown>;
+  webInspection?: WebInspectionSpec;
   quickCommands?: { label: string; command: string }[];
   hints: [string, string, string];
   objectives: ObjectiveRule[];
@@ -166,6 +228,7 @@ export interface Challenge {
   sqlDatasetId?: "ecommerce" | "empresa";
   networkMode?: NetworkWorkbenchMode;
   networkPreset?: Record<string, unknown>;
+  webInspection?: WebInspectionSpec;
   hints: [string, string, string];
   objectives: ObjectiveRule[];
   testCases?: TestCaseSpec[];
