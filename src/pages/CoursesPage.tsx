@@ -657,16 +657,25 @@ export const CoursesPage: React.FC = () => {
         }}
       >
         <div
+          className="ce-hscroll-trail"
           style={{
             width: "100%",
-            maxWidth: TREE_WIDTH,
-            aspectRatio: `${TREE_WIDTH} / ${TREE_HEIGHT}`,
-            position: "relative",
-            transform: `scale(${zoom})`,
-            transformOrigin: "bottom center",
-            transition: "transform 0.2s ease",
+            overflowX: "auto",
+            overflowY: "hidden",
+            padding: "0 18px 8px",
           }}
         >
+          <div
+            style={{
+              width: "100%",
+              minWidth: 880,
+              maxWidth: Math.round(TREE_WIDTH * zoom),
+              aspectRatio: `${TREE_WIDTH} / ${TREE_HEIGHT}`,
+              position: "relative",
+              margin: "0 auto",
+              transition: "max-width 0.2s ease",
+            }}
+          >
           {/* SVG da árvore com caule limpo embaixo e copa frondosa em cima */}
           <svg
             viewBox={`0 0 ${TREE_WIDTH} ${TREE_HEIGHT}`}
@@ -893,6 +902,7 @@ export const CoursesPage: React.FC = () => {
                 type="button"
                 onClick={startLiaTour}
                 title="Iniciar tour com a Lia"
+                aria-label="Iniciar tour guiado pela árvore com a Lia"
                 style={{
                   background: "transparent",
                   border: 0,
@@ -938,6 +948,7 @@ export const CoursesPage: React.FC = () => {
                   type="button"
                   onClick={startLiaTour}
                   title="Clique na Lia para refazer o tour pela árvore"
+                  aria-label="Refazer tour pela árvore com a Lia"
                   style={{
                     position: "relative",
                     background: "transparent",
@@ -1020,14 +1031,14 @@ export const CoursesPage: React.FC = () => {
                     position: "absolute",
                     ...(isRightSide
                       ? {
-                          right: `calc(${((TREE_WIDTH - tourEntry.branch.cx) / TREE_WIDTH) * 100}% + 34px)`,
+                          right: `min(calc(100% - 290px), calc(${((TREE_WIDTH - tourEntry.branch.cx) / TREE_WIDTH) * 100}% + 34px))`,
                           flexDirection: "row-reverse",
                         }
                       : {
-                          left: `calc(${(tourEntry.branch.cx / TREE_WIDTH) * 100}% + 34px)`,
+                          left: `min(calc(100% - 290px), calc(${(tourEntry.branch.cx / TREE_WIDTH) * 100}% + 34px))`,
                           flexDirection: "row",
                         }),
-                    top: `${(tourEntry.branch.cy / TREE_HEIGHT) * 100}%`,
+                    top: `clamp(72px, ${(tourEntry.branch.cy / TREE_HEIGHT) * 100}%, calc(100% - 76px))`,
                     transform: "translateY(-50%)",
                     zIndex: 20,
                     display: "flex",
@@ -1049,7 +1060,7 @@ export const CoursesPage: React.FC = () => {
                   <div
                     className="ce-surface"
                     style={{
-                      width: "min(270px, 50vw)",
+                      width: "min(270px, 42vw)",
                       padding: "11px 13px",
                       borderRadius: 14,
                       border: `1.5px solid ${tourEntry.phase.accent}`,
@@ -1121,6 +1132,7 @@ export const CoursesPage: React.FC = () => {
               );
             })()}
           </AnimatePresence>
+          </div>
         </div>
 
         <span style={{ fontSize: 12, color: "var(--text-muted)", textAlign: "center" }}>

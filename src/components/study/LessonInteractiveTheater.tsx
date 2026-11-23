@@ -21,7 +21,7 @@ import {
 import { LessonStageBackground } from "../motion/LessonStageBackground";
 import { LiaRobotMascot, playLiaEasterEggSound } from "./LiaRobotMascot";
 import { TheaterVisualStage } from "./TheaterVisualStage";
-import { hasInteractiveTheater, loadTheaterScript } from "../../data/theater/registry";
+import { loadTheaterScript } from "../../data/theater/registry";
 import {
   getActSpokenNarration,
   stripCueMarkdown,
@@ -35,8 +35,6 @@ import {
   type TheaterLessonScript,
 } from "../../types/theater";
 import type { Lesson, TrackMeta } from "../../types/curriculum";
-
-export { hasInteractiveTheater };
 
 function resolveAudioUrl(lessonId: string, file: string): string {
   const base = import.meta.env.BASE_URL || "/";

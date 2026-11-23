@@ -1395,6 +1395,12 @@ html.light-theme .ce-track-hero-panel {
   overflow: hidden;
 }
 
+.ce-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .ce-table th,
 .ce-table td {
   text-align: left;
@@ -1628,9 +1634,11 @@ html.light-theme .ce-track-hero-panel {
   flex-direction: column;
   gap: 10px;
   z-index: 1000;
+  pointer-events: none;
 }
 
 .ce-toast {
+  pointer-events: auto;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1852,6 +1860,7 @@ html.light-theme .ce-track-hero-panel {
     top: 0;
     bottom: 0;
     width: 264px;
+    z-index: 70;
     transform: translateX(-105%);
     transition: transform 0.22s ease;
   }
@@ -1866,7 +1875,7 @@ html.light-theme .ce-track-hero-panel {
     position: fixed;
     inset: 0;
     background: rgba(4, 7, 16, 0.65);
-    z-index: 35;
+    z-index: 65;
   }
   .ce-mobile-menu-btn.ce-icon-btn {
     display: inline-flex;
@@ -1995,6 +2004,7 @@ html.light-theme .ce-track-hero-panel {
     align-items: flex-start;
   }
   .ce-toast-stack {
+    top: auto;
     bottom: 72px;
     left: 12px;
     right: 12px;
@@ -3986,7 +3996,7 @@ html.light-theme .ce-rm-dot.is-optional {
   align-items: stretch;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 820px) {
   .ce-rm-canvas-viewport {
     padding: 16px 12px 22px;
   }
@@ -11301,6 +11311,16 @@ html.reduced-motion .ce-flow-pulse-dot {
   }
 }
 
+@media (max-width: 680px) {
+  .ce-rm-inspector-slot {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: 68px;
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 @media (hover: none) {
   .ce-proj-shot-hover {
     background: linear-gradient(180deg, transparent 42%, rgba(7, 10, 20, 0.88) 100%);
@@ -11317,6 +11337,22 @@ html.reduced-motion .ce-flow-pulse-dot {
 }
 
 @media (max-width: 560px) {
+  .ce-rm-detail-progress-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .ce-rm-detail-kpis {
+    width: 100%;
+    gap: 8px;
+  }
+  .ce-modal-backdrop {
+    padding: 10px;
+  }
+  .ce-modal-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
   .ce-rm-cat-grid,
   .ce-rm-mini-grid,
   .ce-rm-status-actions {

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { AlertCircle, Award, Download, Info, RefreshCw, RotateCcw, Upload, X } from "lucide-react";
@@ -39,6 +39,22 @@ export const AppLayout: React.FC = () => {
     dismissToast,
   } = usePlatform();
   const location = useLocation();
+
+  useEffect(() => {
+    setMobileOpen(false);
+    if (location.pathname !== "/plano-de-estudos") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   if (personalizationOpen && !error) {
     return (

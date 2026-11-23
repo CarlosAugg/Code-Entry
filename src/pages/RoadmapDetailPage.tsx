@@ -96,11 +96,20 @@ export const RoadmapDetailPage: React.FC = () => {
     setPriorityFilter("all");
   }, [roadmap, topicParam, nextSuggestedNode?.id]);
 
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    if (searchParams.has("topico")) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("topico");
+      setSearchParams(nextParams, { replace: true });
+    }
+  };
+
   // Fecha o inspetor lateral com Escape
   useEffect(() => {
     if (!drawerOpen) return;
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") setDrawerOpen(false);
+      if (ev.key === "Escape") handleCloseDrawer();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -348,7 +357,7 @@ export const RoadmapDetailPage: React.FC = () => {
           {/* Inspetor lateral sob demanda ao clicar em qualquer nó */}
           <div
             className={`ce-rm-drawer-backdrop ${drawerOpen ? "is-open" : ""}`}
-            onClick={() => setDrawerOpen(false)}
+            onClick={handleCloseDrawer}
           />
           <div className={`ce-rm-inspector-slot ${drawerOpen ? "is-open" : ""}`}>
             <TopicInspectorDrawer
@@ -357,7 +366,7 @@ export const RoadmapDetailPage: React.FC = () => {
               data={data}
               onSelectNode={id => handleSelectNode(id, true)}
               onSetStatus={setRoadmapTopicStatus}
-              onClose={() => setDrawerOpen(false)}
+              onClose={handleCloseDrawer}
             />
           </div>
         </div>

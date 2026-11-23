@@ -27,10 +27,8 @@ import { AmbientAurora } from "../components/motion/AmbientAurora";
 import { AnnotatedCodeBlock, AnnotatedText, GlossaryTerm } from "../components/shared/GlossaryTerm";
 import { TechIcon } from "../components/shared/TechIcon";
 import { LessonConceptDiagram } from "../components/study/LessonConceptDiagram";
-import {
-  hasInteractiveTheater,
-  LessonInteractiveTheater,
-} from "../components/study/LessonInteractiveTheater";
+import { hasInteractiveTheater } from "../data/theater/registry";
+import { LessonInteractiveTheater } from "../components/study/LessonInteractiveTheater";
 import { CodeWorkbench } from "../components/workbenches/CodeWorkbench";
 import { WebWorkbench } from "../components/workbenches/WebWorkbench";
 import { LinuxWorkbench } from "../components/workbenches/LinuxWorkbench";
@@ -516,33 +514,35 @@ export const LessonPage: React.FC = () => {
                   }
                   if (block.kind === "table" && block.headers && block.rows) {
                     return (
-                      <table key={idx} id={`ce-sec-${idx}`} className="ce-table">
-                        <thead>
-                          <tr>
-                            {block.headers.map(h => (
-                              <th key={h}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {block.rows.map((r, rIdx) => (
-                            <tr key={rIdx}>
-                              {r.map((cell, cIdx) => (
-                                <td key={cIdx}>
-                                  {cIdx === 0 ? (
-                                    <code>{cell}</code>
-                                  ) : (
-                                    <AnnotatedText
-                                      text={cell}
-                                      categories={preferredGlossaryCategories}
-                                    />
-                                  )}
-                                </td>
+                      <div key={idx} id={`ce-sec-${idx}`} className="ce-table-scroll">
+                        <table className="ce-table">
+                          <thead>
+                            <tr>
+                              {block.headers.map(h => (
+                                <th key={h}>{h}</th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {block.rows.map((r, rIdx) => (
+                              <tr key={rIdx}>
+                                {r.map((cell, cIdx) => (
+                                  <td key={cIdx}>
+                                    {cIdx === 0 ? (
+                                      <code>{cell}</code>
+                                    ) : (
+                                      <AnnotatedText
+                                        text={cell}
+                                        categories={preferredGlossaryCategories}
+                                      />
+                                    )}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     );
                   }
                   if (block.kind === "code" && block.code) {

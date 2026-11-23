@@ -407,14 +407,18 @@ export const ProductTour: React.FC = () => {
   const actorPos: ActorPos = useMemo(() => {
     const vw = viewport.w;
     const vh = viewport.h;
-    const actorW = actorRef.current?.offsetWidth || (isMobile ? Math.min(368, vw - 24) : 424);
-    const actorH = actorRef.current?.offsetHeight || (isMobile ? 120 : 136);
+    const isNarrowMobile = vw <= 440;
+    const defaultW = isNarrowMobile ? Math.min(300, vw - 20) : isMobile ? Math.min(368, vw - 24) : 424;
+    const defaultH = isNarrowMobile ? 210 : isMobile ? 120 : 136;
+    const actorW = Math.min(vw - 20, actorRef.current?.offsetWidth || defaultW);
+    const actorH = actorRef.current?.offsetHeight || defaultH;
 
     if (isMobile) {
-      const x = Math.max(12, (vw - actorW) / 2);
+      const x = Math.max(10, (vw - actorW) / 2);
       const lowerTarget = targetRect ? targetRect.top + targetRect.height / 2 > vh * 0.52 : false;
-      const y =
-        step.openThemeDock || lowerTarget ? 72 : Math.max(72, vh - actorH - 76);
+      const rawY =
+        step.openThemeDock || lowerTarget ? 68 : Math.max(68, vh - actorH - 72);
+      const y = Math.max(68, Math.min(vh - actorH - 70, rawY));
       return { x, y, bubbleSide: "right" };
     }
 

@@ -550,28 +550,30 @@ export const NetworkWorkbench: React.FC<NetworkWorkbenchProps> = ({
                 />
               </label>
               {vlsmPlan.ok ? (
-                <table className="ce-table">
-                  <thead>
-                    <tr>
-                      <th>Segmento</th>
-                      <th>CIDR</th>
-                      <th>Máscara</th>
-                      <th>Faixa Útil</th>
-                      <th>Broadcast</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vlsmPlan.rows.map(r => (
-                      <tr key={r.name}>
-                        <td>{r.name}</td>
-                        <td><code>{r.networkAddress}/{r.prefix}</code></td>
-                        <td><code>{r.subnetMask}</code></td>
-                        <td><code>{r.firstHost} – {r.lastHost}</code></td>
-                        <td><code>{r.broadcastAddress}</code></td>
+                <div className="ce-table-scroll">
+                  <table className="ce-table">
+                    <thead>
+                      <tr>
+                        <th>Segmento</th>
+                        <th>CIDR</th>
+                        <th>Máscara</th>
+                        <th>Faixa Útil</th>
+                        <th>Broadcast</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {vlsmPlan.rows.map(r => (
+                        <tr key={r.name}>
+                          <td>{r.name}</td>
+                          <td><code>{r.networkAddress}/{r.prefix}</code></td>
+                          <td><code>{r.subnetMask}</code></td>
+                          <td><code>{r.firstHost} – {r.lastHost}</code></td>
+                          <td><code>{r.broadcastAddress}</code></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <div style={{ color: "var(--accent-danger)", fontSize: 12.5 }}>{vlsmPlan.error}</div>
               )}
@@ -780,7 +782,7 @@ export const NetworkWorkbench: React.FC<NetworkWorkbenchProps> = ({
           )}
 
           {topoTab === "routes" && (
-            <div style={{ padding: 14 }}>
+            <div className="ce-table-scroll" style={{ padding: 14 }}>
               <table className="ce-table">
                 <thead>
                   <tr>
@@ -826,7 +828,7 @@ export const NetworkWorkbench: React.FC<NetworkWorkbenchProps> = ({
           )}
 
           {topoTab === "acl" && (
-            <div style={{ padding: 14 }}>
+            <div className="ce-table-scroll" style={{ padding: 14 }}>
               <table className="ce-table">
                 <thead>
                   <tr>

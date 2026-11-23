@@ -166,7 +166,7 @@ export const TrackDetailPage: React.FC = () => {
       </div>
 
       {/* Progresso real por módulo + O que você vai dominar */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 16 }}>
         <section className="ce-panel">
           <h2 className="ce-section-title" style={{ fontSize: 15, marginBottom: 12 }}>
             Progresso por Módulo
