@@ -7,6 +7,7 @@ import { AmbientAurora } from "../components/motion/AmbientAurora";
 import { ShinyText } from "../components/motion/ShinyText";
 import { SpotlightCard } from "../components/motion/SpotlightCard";
 import { TechIcon } from "../components/shared/TechIcon";
+import { HeroIllustration } from "../components/shared/HeroIllustration";
 
 export const TracksPage: React.FC = () => {
   const { stats } = usePlatform();
@@ -18,11 +19,11 @@ export const TracksPage: React.FC = () => {
     return TRACKS.filter(track => {
       const tp = stats.perTrack[track.id];
       if (categoryFilter !== "Todas" && track.category !== categoryFilter) return false;
-      if (statusFilter === "Em andamento" && !(tp.completedLessons > 0 && tp.completedLessons < tp.totalLessons)) {
+      if (statusFilter === "Em andamento" && !(tp.hasEffectiveStart && tp.percent < 100)) {
         return false;
       }
-      if (statusFilter === "Não iniciadas" && tp.completedLessons > 0) return false;
-      if (statusFilter === "Concluídas" && tp.completedLessons < tp.totalLessons) return false;
+      if (statusFilter === "Não iniciadas" && tp.hasEffectiveStart) return false;
+      if (statusFilter === "Concluídas" && tp.percent < 100) return false;
 
       if (search.trim()) {
         const hay = `${track.name} ${track.tagline} ${track.description} ${track.category}`.toLowerCase();
@@ -35,9 +36,9 @@ export const TracksPage: React.FC = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       {/* Hero da página Trilhas */}
-      <section className="ce-hero-banner" style={{ gridTemplateColumns: "1fr auto" }}>
+      <section className="ce-hero-banner ce-tracks-hero">
         <AmbientAurora />
-        <div>
+        <div className="ce-tracks-hero-copy">
           <span className="ce-badge" style={{ borderColor: "var(--border-accent)", color: "var(--accent-secondary)" }}>
             <Compass size={12} />
             <ShinyText text="Explore as trilhas" />
@@ -46,18 +47,24 @@ export const TracksPage: React.FC = () => {
             Escolha sua trilha de estudos
           </h1>
           <p className="ce-hero-sub" style={{ marginBottom: 0 }}>
-            Formações estruturadas com teoria clara, exemplos comentados, ambientes práticos interativos e desafios guiados.
+            Aulas práticas passo a passo com editor e validação direta no navegador.
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <div className="ce-metric-tile" style={{ minWidth: 130 }}>
-            <span>Trilhas ativas</span>
-            <strong>{TRACKS.length}</strong>
+        <div className="ce-tracks-hero-right">
+          <div className="ce-tracks-hero-art-wrap" aria-hidden="true">
+            <HeroIllustration variant="tracks" />
           </div>
-          <div className="ce-metric-tile" style={{ minWidth: 130 }}>
-            <span>Aulas práticas</span>
-            <strong>{stats.totalLessons}</strong>
+
+          <div className="ce-tracks-hero-metrics">
+            <div className="ce-metric-tile">
+              <span>Trilhas ativas</span>
+              <strong>{TRACKS.length}</strong>
+            </div>
+            <div className="ce-metric-tile">
+              <span>Aulas práticas</span>
+              <strong>{stats.totalLessons}</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -135,7 +142,7 @@ export const TracksPage: React.FC = () => {
                   <TechIcon trackId={track.id} size={32} boxed />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     <span className="ce-badge">{track.category}</span>
-                    {(tp.completedLessons > 0 || tp.completedChallenges > 0) && (
+                    {tp.hasEffectiveStart && (
                       <span
                         className="ce-badge"
                         style={{
@@ -144,7 +151,7 @@ export const TracksPage: React.FC = () => {
                           color: track.accentSecondary,
                         }}
                       >
-                        {tp.percent}%
+                        {tp.percent === 100 ? "Concluída" : `${tp.percent}%`}
                       </span>
                     )}
                   </div>
@@ -172,7 +179,9 @@ export const TracksPage: React.FC = () => {
                       {tp.completedLessons}/{tp.totalLessons} aulas · {tp.completedChallenges}/{challengeCount} desafios
                     </span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 700, color: track.accentSecondary }}>
-                      <span>{tp.completedLessons > 0 || tp.completedChallenges > 0 ? "Continuar" : "Iniciar"}</span>
+                      <span>
+                        {tp.percent === 100 ? "Revisar" : tp.hasEffectiveStart ? "Continuar" : "Começar"}
+                      </span>
                       <ArrowRight size={14} />
                     </span>
                   </div>

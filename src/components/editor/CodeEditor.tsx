@@ -1,19 +1,31 @@
-import React, { useEffect, useRef } from "react";
-import { EditorState, Compartment, Prec } from "@codemirror/state";
-import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, BookOpen, X } from "lucide-react";
+import { EditorSelection, EditorState, Compartment, Prec } from "@codemirror/state";
+import {
+  EditorView,
+  hoverTooltip,
+  keymap,
+  lineNumbers,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+} from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { bracketMatching, defaultHighlightStyle, HighlightStyle, indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { autocompletion, completeFromList } from "@codemirror/autocomplete";
 import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
 import { searchKeymap } from "@codemirror/search";
 import { cpp } from "@codemirror/lang-cpp";
+import { css } from "@codemirror/lang-css";
+import { html } from "@codemirror/lang-html";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { sql, SQLite } from "@codemirror/lang-sql";
 import { tags } from "@lezer/highlight";
 import { usePlatform } from "../../context/PlatformContext";
+import { findGlossaryEntryForCodeToken, type GlossaryEntry } from "../../data/glossary";
 
-export type EditorLanguage = "logic" | "cpp" | "js" | "python" | "sql";
+export type EditorLanguage = "logic" | "cpp" | "js" | "python" | "sql" | "html" | "css";
 
 interface CodeEditorProps {
   language: EditorLanguage;
@@ -27,6 +39,14 @@ interface CodeEditorProps {
 const DARK_HIGHLIGHT = HighlightStyle.define([
   { tag: tags.keyword, color: "#c084fc", fontWeight: "600" },
   { tag: tags.typeName, color: "#67e8f9" },
+  { tag: tags.tagName, color: "#fb7185", fontWeight: "600" },
+  { tag: tags.attributeName, color: "#38bdf8" },
+  { tag: tags.attributeValue, color: "#fbbf24" },
+  { tag: tags.propertyName, color: "#67e8f9" },
+  { tag: tags.className, color: "#facc15" },
+  { tag: tags.color, color: "#fb923c" },
+  { tag: tags.unit, color: "#f472b6" },
+  { tag: tags.angleBracket, color: "#94a3b8" },
   { tag: tags.string, color: "#fbbf24" },
   { tag: tags.number, color: "#fb923c" },
   { tag: tags.bool, color: "#f472b6" },
@@ -39,6 +59,14 @@ const DARK_HIGHLIGHT = HighlightStyle.define([
 const LIGHT_HIGHLIGHT = HighlightStyle.define([
   { tag: tags.keyword, color: "#7c3aed", fontWeight: "600" },
   { tag: tags.typeName, color: "#0369a1" },
+  { tag: tags.tagName, color: "#e11d48", fontWeight: "600" },
+  { tag: tags.attributeName, color: "#0284c7" },
+  { tag: tags.attributeValue, color: "#b45309" },
+  { tag: tags.propertyName, color: "#0369a1" },
+  { tag: tags.className, color: "#a16207" },
+  { tag: tags.color, color: "#c2410c" },
+  { tag: tags.unit, color: "#be185d" },
+  { tag: tags.angleBracket, color: "#64748b" },
   { tag: tags.string, color: "#b45309" },
   { tag: tags.number, color: "#c2410c" },
   { tag: tags.bool, color: "#db2777" },
@@ -73,6 +101,10 @@ function createTheme(isDark: boolean) {
       ".cm-activeLineGutter": {
         backgroundColor: "rgba(var(--accent-rgb), 0.14)",
         color: "var(--text-primary)",
+      },
+      ".cm-lineNumbers .cm-gutterElement": {
+        cursor: "pointer",
+        userSelect: "none",
       },
       "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
         backgroundColor: isDark ? "rgba(var(--accent-rgb), 0.28)" : "rgba(var(--accent-rgb), 0.18)",
@@ -144,6 +176,31 @@ const COMPLETIONS: Record<EditorLanguage, { label: string; type: string; apply?:
     { label: "CREATE TABLE", type: "keyword" },
     { label: "INSERT INTO", type: "keyword" },
   ],
+  html: [
+    { label: "<!DOCTYPE html>", type: "keyword" },
+    { label: "<main>", type: "keyword", apply: "<main>\n  \n</main>" },
+    { label: "<header>", type: "keyword", apply: "<header>\n  \n</header>" },
+    { label: "<section>", type: "keyword", apply: "<section>\n  \n</section>" },
+    { label: "<article>", type: "keyword", apply: "<article>\n  \n</article>" },
+    { label: "<footer>", type: "keyword", apply: "<footer>\n  \n</footer>" },
+    { label: "<nav>", type: "keyword", apply: "<nav>\n  \n</nav>" },
+    { label: "<button>", type: "keyword", apply: '<button type="button"></button>' },
+    { label: "<label>", type: "keyword", apply: '<label for=""></label>' },
+    { label: "<input>", type: "keyword", apply: '<input id="" type="text" />' },
+    { label: 'aria-label=""', type: "property" },
+  ],
+  css: [
+    { label: "display: flex;", type: "property" },
+    { label: "display: grid;", type: "property" },
+    { label: "flex-direction: column;", type: "property" },
+    { label: "justify-content: space-between;", type: "property" },
+    { label: "align-items: center;", type: "property" },
+    { label: "grid-template-columns:", type: "property", apply: "grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));" },
+    { label: "gap:", type: "property", apply: "gap: 16px;" },
+    { label: "padding:", type: "property", apply: "padding: 16px;" },
+    { label: "border-radius:", type: "property", apply: "border-radius: 12px;" },
+    { label: "@media (max-width: 640px)", type: "keyword", apply: "@media (max-width: 640px) {\n  \n}" },
+  ],
 };
 
 function createSimpleLinter(language: EditorLanguage) {
@@ -157,7 +214,7 @@ function createSimpleLinter(language: EditorLanguage) {
       { open: "[", close: "]" },
       { open: "{", close: "}" },
     ];
-    if (language !== "python") {
+    if (language !== "python" && language !== "html") {
       const stack: { ch: string; pos: number }[] = [];
       let quote: string | null = null;
       for (let i = 0; i < text.length; i++) {
@@ -197,6 +254,161 @@ function createSimpleLinter(language: EditorLanguage) {
   });
 }
 
+function extractCodeGlossaryAt(
+  view: EditorView,
+  pos: number,
+  language: EditorLanguage
+): { entry: GlossaryEntry; from: number; to: number } | null {
+  const doc = view.state.doc;
+  const safePos = Math.max(0, Math.min(doc.length, pos));
+  const line = doc.lineAt(safePos);
+  const text = line.text;
+  if (!text) return null;
+
+  const col = safePos - line.from;
+
+  const compoundRx =
+    /(<\/?[a-zA-Z][a-zA-Z0-9-]*>|@media|\b(?:document\.querySelectorAll|document\.querySelector|document\.getElementById|console\.log|event\.preventDefault|INNER\s+JOIN|LEFT\s+JOIN|GROUP\s+BY|ORDER\s+BY|PRIMARY\s+KEY|FOREIGN\s+KEY|aria-label)\b|=>|#include)/g;
+  let cm: RegExpExecArray | null;
+  while ((cm = compoundRx.exec(text)) !== null) {
+    const start = cm.index;
+    const end = cm.index + cm[0].length;
+    if (col >= start && col <= end) {
+      const normalized =
+        cm[0].startsWith("<") && cm[0].endsWith(">") ? cm[0] : cm[0].replace(/\s+/g, " ");
+      const entry = findGlossaryEntryForCodeToken(normalized, language, text);
+      if (entry) {
+        return { entry, from: line.from + start, to: line.from + end };
+      }
+    }
+  }
+
+  let start = col;
+  let end = col;
+  const wordChar = /[A-Za-z0-9_-]/;
+  if (start > 0 && !wordChar.test(text[start] || "") && wordChar.test(text[start - 1] || "")) {
+    start -= 1;
+    end = start;
+  }
+  while (start > 0 && wordChar.test(text[start - 1] || "")) start -= 1;
+  while (end < text.length && wordChar.test(text[end] || "")) end += 1;
+  if (end <= start) return null;
+
+  const token = text.slice(start, end);
+  const entry = findGlossaryEntryForCodeToken(token, language, text);
+  if (!entry) return null;
+  return { entry, from: line.from + start, to: line.from + end };
+}
+
+function createCodeHoverTooltip(language: EditorLanguage) {
+  return hoverTooltip(
+    (view, pos) => {
+      const hit = extractCodeGlossaryAt(view, pos, language);
+      if (!hit) return null;
+      const { entry, from, to } = hit;
+
+      return {
+        pos: from,
+        end: to,
+        above: true,
+        create() {
+          const dom = document.createElement("div");
+          dom.className = "ce-cm-glossary-tip";
+
+          const head = document.createElement("div");
+          head.className = "ce-cm-glossary-head";
+
+          const title = document.createElement("strong");
+          title.textContent = entry.term;
+          head.appendChild(title);
+
+          if (entry.translation) {
+            const sub = document.createElement("span");
+            sub.className = "ce-cm-glossary-trans";
+            sub.textContent = entry.translation;
+            head.appendChild(sub);
+          }
+
+          const body = document.createElement("p");
+          body.className = "ce-cm-glossary-body";
+          body.textContent = entry.shortExplanation;
+
+          dom.appendChild(head);
+          dom.appendChild(body);
+
+          if (entry.exampleContext) {
+            const ex = document.createElement("code");
+            ex.className = "ce-cm-glossary-ex";
+            ex.textContent = entry.exampleContext;
+            dom.appendChild(ex);
+          }
+
+          return { dom };
+        },
+      };
+    },
+    { hoverTime: 340 }
+  );
+}
+
+function createLineNumberSelection(
+  cleanupDragRef: React.MutableRefObject<(() => void) | null>
+) {
+  return lineNumbers({
+    domEventHandlers: {
+      mousedown(view, line, event) {
+        const mouseEvent = event as MouseEvent;
+        if (mouseEvent.button !== 0) return false;
+        mouseEvent.preventDefault();
+        cleanupDragRef.current?.();
+
+        const doc = view.state.doc;
+        const clickedLine = doc.lineAt(line.from);
+        const anchorLine = mouseEvent.shiftKey
+          ? doc.lineAt(view.state.selection.main.anchor)
+          : clickedLine;
+
+        const applyLineSelection = (
+          fromLine: ReturnType<typeof doc.lineAt>,
+          toLine: ReturnType<typeof doc.lineAt>
+        ) => {
+          const forward = toLine.number >= fromLine.number;
+          const anchor = forward ? fromLine.from : fromLine.to;
+          const head = forward ? toLine.to : toLine.from;
+          view.dispatch({
+            selection: EditorSelection.single(anchor, head),
+            scrollIntoView: true,
+          });
+        };
+
+        applyLineSelection(anchorLine, clickedLine);
+        view.focus();
+
+        const onMouseMove = (moveEv: MouseEvent) => {
+          const targetBlock = view.lineBlockAtHeight(moveEv.clientY - view.documentTop);
+          const targetLine = view.state.doc.lineAt(targetBlock.from);
+          applyLineSelection(anchorLine, targetLine);
+        };
+
+        const cleanup = () => {
+          window.removeEventListener("mousemove", onMouseMove);
+          window.removeEventListener("mouseup", onMouseUp);
+          if (cleanupDragRef.current === cleanup) {
+            cleanupDragRef.current = null;
+          }
+        };
+
+        const onMouseUp = () => cleanup();
+
+        cleanupDragRef.current = cleanup;
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+        return true;
+      },
+    },
+  });
+}
+
 function getLangExtension(language: EditorLanguage) {
   switch (language) {
     case "cpp":
@@ -208,6 +420,10 @@ function getLangExtension(language: EditorLanguage) {
       return python();
     case "sql":
       return sql({ dialect: SQLite });
+    case "html":
+      return html();
+    case "css":
+      return css();
   }
 }
 
@@ -222,12 +438,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const { data } = usePlatform();
   const isDark = data.settings.theme !== "light";
 
+  const [activeGlossary, setActiveGlossary] = useState<GlossaryEntry | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onRunRef = useRef(onRun);
+  const activeLangRef = useRef<EditorLanguage>(language);
+  const gutterDragCleanupRef = useRef<(() => void) | null>(null);
+  const toggleInspectorRef = useRef<() => void>(() => {});
   onChangeRef.current = onChange;
   onRunRef.current = onRun;
+  activeLangRef.current = language;
+  toggleInspectorRef.current = () => setInspectorOpen(prev => !prev);
 
   const themeCompRef = useRef(new Compartment());
   const highlightCompRef = useRef(new Compartment());
@@ -245,13 +469,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             return true;
           },
         },
+        {
+          key: "Alt-i",
+          run: () => {
+            toggleInspectorRef.current();
+            return true;
+          },
+        },
       ])
     );
 
     const state = EditorState.create({
       doc: value,
       extensions: [
-        lineNumbers(),
+        createLineNumberSelection(gutterDragCleanupRef),
         highlightActiveLineGutter(),
         highlightActiveLine(),
         EditorView.lineWrapping,
@@ -259,10 +490,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         bracketMatching(),
         indentUnit.of(language === "python" || language === "cpp" ? "    " : "  "),
         lintGutter(),
-        autocompletion({
-          override: [completeFromList(COMPLETIONS[language] || [])],
-        }),
-        langCompRef.current.of([getLangExtension(language), createSimpleLinter(language)]),
+        langCompRef.current.of([
+          getLangExtension(language),
+          createSimpleLinter(language),
+          autocompletion({
+            override: [completeFromList(COMPLETIONS[language] || [])],
+          }),
+          createCodeHoverTooltip(language),
+        ]),
         themeCompRef.current.of(createTheme(isDark)),
         highlightCompRef.current.of(
           syntaxHighlighting(isDark ? DARK_HIGHLIGHT : LIGHT_HIGHLIGHT, { fallback: true })
@@ -275,6 +510,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           if (update.docChanged) {
             onChangeRef.current(update.state.doc.toString());
           }
+          if (update.selectionSet || update.docChanged) {
+            const hit = extractCodeGlossaryAt(
+              update.view,
+              update.state.selection.main.head,
+              activeLangRef.current
+            );
+            setActiveGlossary(hit ? hit.entry : null);
+          }
         }),
       ],
     });
@@ -285,7 +528,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     });
     viewRef.current = view;
 
+    const initialHit = extractCodeGlossaryAt(view, view.state.selection.main.head, activeLangRef.current);
+    setActiveGlossary(initialHit ? initialHit.entry : null);
+
     return () => {
+      gutterDragCleanupRef.current?.();
       view.destroy();
       viewRef.current = null;
     };
@@ -318,7 +565,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     });
   }, [isDark]);
 
-  // Atualiza linguagem dinamicamente
+  // Atualiza linguagem, autocompletar e explicações contextuais dinamicamente
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -326,15 +573,98 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       effects: langCompRef.current.reconfigure([
         getLangExtension(language),
         createSimpleLinter(language),
+        autocompletion({
+          override: [completeFromList(COMPLETIONS[language] || [])],
+        }),
+        createCodeHoverTooltip(language),
       ]),
     });
+    const hit = extractCodeGlossaryAt(view, view.state.selection.main.head, language);
+    setActiveGlossary(hit ? hit.entry : null);
   }, [language]);
 
+  useEffect(() => {
+    if (!activeGlossary && inspectorOpen) {
+      setInspectorOpen(false);
+    }
+  }, [activeGlossary, inspectorOpen]);
+
+  useEffect(() => {
+    if (!inspectorOpen) return;
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") {
+        setInspectorOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [inspectorOpen]);
+
   return (
-    <div
-      ref={containerRef}
-      className="ce-editor-box"
-      style={{ minHeight }}
-    />
+    <div className="ce-editor-shell">
+      <div
+        ref={containerRef}
+        className="ce-editor-box"
+        style={{ minHeight }}
+      />
+
+      <div className="ce-editor-glossary-bar">
+        {activeGlossary ? (
+          <button
+            type="button"
+            className={`ce-editor-glossary-btn ${inspectorOpen ? "is-open" : ""}`}
+            onClick={() => setInspectorOpen(prev => !prev)}
+            aria-expanded={inspectorOpen}
+          >
+            <BookOpen size={12} />
+            <span>Conceito no cursor:</span>
+            <strong>{activeGlossary.term}</strong>
+            <kbd>Alt+I</kbd>
+          </button>
+        ) : (
+          <span className="ce-editor-glossary-tip">
+            Clique em um número de linha para selecionar a linha inteira · Passe o mouse ou use{" "}
+            <kbd>Alt+I</kbd> sobre termos do código
+          </span>
+        )}
+      </div>
+
+      {inspectorOpen && activeGlossary && (
+        <div className="ce-editor-glossary-card" role="region" aria-label="Explicação do código">
+          <div className="ce-editor-glossary-card-head">
+            <div>
+              <strong>{activeGlossary.term}</strong>
+              {activeGlossary.translation && (
+                <span className="ce-glossary-translation">{activeGlossary.translation}</span>
+              )}
+            </div>
+            <button
+              type="button"
+              className="ce-glossary-close"
+              onClick={() => setInspectorOpen(false)}
+              aria-label="Fechar explicação"
+            >
+              <X size={13} />
+            </button>
+          </div>
+          <p className="ce-glossary-body">{activeGlossary.shortExplanation}</p>
+          {activeGlossary.exampleContext && (
+            <div className="ce-glossary-example">
+              <span>Uso típico:</span>
+              <code>{activeGlossary.exampleContext}</code>
+            </div>
+          )}
+          {activeGlossary.roadmapTopicRef && (
+            <Link
+              to={`/roadmaps/${activeGlossary.roadmapTopicRef.roadmapId}?topico=${activeGlossary.roadmapTopicRef.nodeId}`}
+              className="ce-glossary-roadmap-link"
+            >
+              <span>{activeGlossary.roadmapTopicRef.label}</span>
+              <ArrowRight size={12} />
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
   );
 };

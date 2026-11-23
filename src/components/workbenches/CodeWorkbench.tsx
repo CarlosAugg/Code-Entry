@@ -5,7 +5,6 @@ import {
   Eraser,
   Play,
   RotateCcw,
-  Sparkles,
   Terminal,
   Variable,
   XCircle,
@@ -152,24 +151,16 @@ export const CodeWorkbench: React.FC<CodeWorkbenchProps> = ({
           <button
             type="button"
             className="ce-btn ce-btn-ghost ce-btn-sm"
-            onClick={() => onChangeCode(basicFormatCode(code, trackId))}
-            title="Formatar indentação do código"
+            onClick={() =>
+              onChangeCode(
+                starterCode !== undefined ? starterCode : basicFormatCode(code, trackId)
+              )
+            }
+            title="Restaurar e formatar código para o modelo inicial"
           >
-            <Sparkles size={13} />
+            <RotateCcw size={13} />
             <span>Formatar</span>
           </button>
-
-          {starterCode !== undefined && (
-            <button
-              type="button"
-              className="ce-btn ce-btn-ghost ce-btn-sm"
-              onClick={() => onChangeCode(starterCode)}
-              title="Restaurar modelo inicial"
-            >
-              <RotateCcw size={13} />
-              <span>Modelo</span>
-            </button>
-          )}
 
           <button
             type="button"

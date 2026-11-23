@@ -7,6 +7,7 @@ import { AmbientAurora } from "../components/motion/AmbientAurora";
 import { ShinyText } from "../components/motion/ShinyText";
 import { SpotlightCard } from "../components/motion/SpotlightCard";
 import { TechIcon } from "../components/shared/TechIcon";
+import { HeroIllustration } from "../components/shared/HeroIllustration";
 
 export const AchievementsPage: React.FC = () => {
   const { data, stats } = usePlatform();
@@ -27,7 +28,7 @@ export const AchievementsPage: React.FC = () => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <section className="ce-hero-banner" style={{ gridTemplateColumns: "1fr auto" }}>
+      <section className="ce-hero-banner ce-hero-with-art">
         <AmbientAurora />
         <div>
           <span className="ce-badge" style={{ borderColor: "rgba(250,204,21,0.4)", color: "#FACC15" }}>
@@ -42,16 +43,21 @@ export const AchievementsPage: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <div className="ce-metric-tile" style={{ minWidth: 140 }}>
-            <span>Desbloqueadas</span>
-            <strong style={{ color: "#FACC15" }}>
-              {unlockedTotal} / {ACHIEVEMENTS.length}
-            </strong>
+        <div className="ce-hero-right-cluster">
+          <div className="ce-hero-art-slot" aria-hidden="true">
+            <HeroIllustration variant="achievements" />
           </div>
-          <div className="ce-metric-tile" style={{ minWidth: 130 }}>
-            <span>XP Total</span>
-            <strong>{stats.totalXp} XP</strong>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div className="ce-metric-tile" style={{ minWidth: 140 }}>
+              <span>Desbloqueadas</span>
+              <strong style={{ color: "#FACC15" }}>
+                {unlockedTotal} / {ACHIEVEMENTS.length}
+              </strong>
+            </div>
+            <div className="ce-metric-tile" style={{ minWidth: 130 }}>
+              <span>XP Total</span>
+              <strong>{stats.totalXp} XP</strong>
+            </div>
           </div>
         </div>
       </section>

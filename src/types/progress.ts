@@ -55,6 +55,15 @@ export interface ActivityHistoryEntry {
   createdAt: string;
 }
 
+export type RoadmapTopicStatus = "not_started" | "in_progress" | "completed" | "skipped";
+
+export interface RoadmapTopicProgressEntry {
+  topicId: string;
+  roadmapId: string;
+  status: RoadmapTopicStatus;
+  updatedAt: string;
+}
+
 export interface BootstrapPayload {
   settings: UserSettings;
   lessonProgress: Record<string, LessonProgressEntry>;
@@ -64,6 +73,29 @@ export interface BootstrapPayload {
   achievements: Record<string, string>;
   workspaces: Record<string, unknown>;
   dailyStudyLog: Record<string, number>;
+  roadmapProgress: Record<string, RoadmapTopicProgressEntry>;
+  savedRoadmaps: string[];
+}
+
+export type StorageErrorCode =
+  | "CORRUPTED_STORAGE"
+  | "UNSUPPORTED_FUTURE_SCHEMA"
+  | "STORAGE_UNAVAILABLE"
+  | "WRITE_FAILED";
+
+export interface StorageErrorInfo {
+  code: StorageErrorCode;
+  message: string;
+  canDownloadRawBackup: boolean;
+  canImportJson: boolean;
+  canResetLocal: boolean;
+}
+
+export interface BootstrapWithMeta {
+  payload: BootstrapPayload;
+  warnings: string[];
+  migratedFromKey: string | null;
+  migratedFromVersion: number | null;
 }
 
 export interface AchievementDefinition {
@@ -119,14 +151,19 @@ export interface ComputedStats {
   streakDays: number;
   historyCount: number;
   startedTracks: TrackId[];
+  activeTracks: TrackId[];
+  hasStartedAnyTrack: boolean;
   completedTracks: TrackId[];
   perTrack: Record<
     TrackId,
     {
       totalLessons: number;
       completedLessons: number;
+      inProgressLessons: number;
       totalChallenges: number;
       completedChallenges: number;
+      inProgressChallenges: number;
+      hasEffectiveStart: boolean;
       lessonPercent: number;
       percent: number;
       xp: number;

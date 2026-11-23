@@ -1,4 +1,5 @@
 import type { Challenge } from "../types/curriculum";
+import { serializeWebFiles } from "../engines/web/webFiles";
 
 export const CHALLENGES: Challenge[] = [
   // ===================== Lógica de Programação (3) =====================
@@ -731,6 +732,253 @@ export const CHALLENGES: Challenge[] = [
     ],
     referenceSolution:
       "SELECT pr.nome AS produto, SUM(ip.quantidade) AS unidades FROM itens_pedido ip INNER JOIN produtos pr ON pr.id = ip.produto_id INNER JOIN pedidos pe ON pe.id = ip.pedido_id WHERE pe.status <> 'cancelado' GROUP BY pr.id, pr.nome ORDER BY unidades DESC, pr.nome ASC;",
+  },
+  {
+    id: "ch-web-1",
+    trackId: "web",
+    title: "Cartão de Produto Semântico e Estilizado",
+    topic: "HTML5 & Box Model",
+    difficulty: "Fácil",
+    estimatedMinutes: 12,
+    xp: 100,
+    workbench: "web",
+    summary: "Estruture um cartão de produto acessível com imagem descritiva e Box Model consistente.",
+    prompt:
+      'Crie em index.html um <article class="produto-card"> contendo <h2> com o título, <img alt="..."> descritivo, <p class="preco"> e <button type="button">Comprar</button>. Em style.css, aplique box-sizing: border-box, padding, border e border-radius em .produto-card.',
+    starterCode: serializeWebFiles({
+      html: `<main>
+  <!-- Monte o <article class="produto-card"> aqui -->
+</main>`,
+      css: `.produto-card {
+  max-width: 320px;
+}
+`,
+      js: "",
+    }),
+    hints: [
+      'Adicione <article class="produto-card"> dentro de <main> com um <h2> e uma <img src="data:image/svg+xml,..." alt="...">.',
+      'Inclua <p class="preco">R$ 149,90</p> e <button type="button">Comprar</button>.',
+      "Em style.css, configure box-sizing: border-box; padding: 18px; border: 1px solid #cbd5e1; border-radius: 12px; em .produto-card.",
+    ],
+    webInspection: {
+      selectors: [".produto-card", ".produto-card h2", ".produto-card img", ".produto-card .preco", ".produto-card button"],
+      styleProps: ["box-sizing", "padding", "padding-top", "border-radius"],
+    },
+    objectives: [
+      {
+        id: "ch-web1-dom",
+        label: "Incluir .produto-card com h2, img com alt, .preco e button",
+        test: ctx =>
+          Boolean(
+            ctx.web?.queries[".produto-card"]?.count &&
+              ctx.web?.queries[".produto-card h2"]?.count &&
+              ctx.web?.queries[".produto-card img"]?.attrs.alt?.trim() &&
+              ctx.web?.queries[".produto-card .preco"]?.count &&
+              ctx.web?.queries[".produto-card button"]?.count
+          ),
+      },
+      {
+        id: "ch-web1-css",
+        label: "Aplicar box-sizing: border-box, padding, border e border-radius",
+        test: ctx => {
+          const css = ctx.web?.files.css || "";
+          const s = ctx.web?.queries[".produto-card"]?.styles;
+          return Boolean(
+            s?.["box-sizing"] === "border-box" &&
+              parseFloat(s?.["padding-top"] || s?.padding || "0") > 0 &&
+              parseFloat(s?.["border-radius"] || "0") > 0 &&
+              /border\s*:/i.test(css)
+          );
+        },
+      },
+    ],
+    referenceSolution: serializeWebFiles({
+      html: `<main>
+  <article class="produto-card">
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' rx='10' fill='%23f97316'/%3E%3C/svg%3E" alt="Teclado mecânico compacto" />
+    <h2>Teclado Compacto</h2>
+    <p class="preco">R$ 249,90</p>
+    <button type="button">Comprar</button>
+  </article>
+</main>`,
+      css: `.produto-card {
+  box-sizing: border-box;
+  max-width: 320px;
+  padding: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+}`,
+      js: "",
+    }),
+  },
+  {
+    id: "ch-web-2",
+    trackId: "web",
+    title: "Grade Responsiva de Planos com CSS Grid",
+    topic: "CSS Grid & Media Queries",
+    difficulty: "Intermediário",
+    estimatedMinutes: 14,
+    xp: 130,
+    workbench: "web",
+    summary: "Organize 3 planos lado a lado em Grid com espaçamento e fallback para 1 coluna em celular.",
+    prompt:
+      "Configure .planos-grid em style.css como display: grid com gap de 14px e grid-template-columns de 3 colunas, além de @media (max-width: 640px) que altere a grade para 1 coluna. Destaque .plano.recomendado com borda laranja.",
+    starterCode: serializeWebFiles({
+      html: `<section class="planos-grid">
+  <article class="plano">Básico</article>
+  <article class="plano recomendado">Pro</article>
+  <article class="plano">Equipe</article>
+</section>`,
+      css: `.plano {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+}
+`,
+      js: "",
+    }),
+    hints: [
+      "Adicione .planos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }.",
+      "Estilize .plano.recomendado com border: 2px solid #f97316; e background-color: #fff7ed;.",
+      "Inclua @media (max-width: 640px) { .planos-grid { grid-template-columns: 1fr; } }.",
+    ],
+    webInspection: {
+      selectors: [".planos-grid", ".plano", ".plano.recomendado"],
+      styleProps: ["display", "gap", "border-color"],
+    },
+    objectives: [
+      {
+        id: "ch-web2-grid",
+        label: "Ativar display: grid com gap e grid-template-columns em .planos-grid",
+        test: ctx =>
+          Boolean(
+            ctx.web?.queries[".planos-grid"]?.styles.display === "grid" &&
+              Boolean(ctx.web?.queries[".planos-grid"]?.styles.gap) &&
+              /grid-template-columns\s*:/i.test(ctx.web?.files.css || "")
+          ),
+      },
+      {
+        id: "ch-web2-responsive",
+        label: "Configurar destaque em .plano.recomendado e @media para telas pequenas",
+        test: ctx => {
+          const css = ctx.web?.files.css || "";
+          return /\.plano\.recomendado|\.recomendado/.test(css) && /@media\s*\(/i.test(css) && /1fr/i.test(css);
+        },
+      },
+    ],
+    referenceSolution: serializeWebFiles({
+      html: `<section class="planos-grid">
+  <article class="plano">Básico</article>
+  <article class="plano recomendado">Pro</article>
+  <article class="plano">Equipe</article>
+</section>`,
+      css: `.planos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.plano {
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+}
+
+.plano.recomendado {
+  border: 2px solid #f97316;
+  background-color: #fff7ed;
+}
+
+@media (max-width: 640px) {
+  .planos-grid {
+    grid-template-columns: 1fr;
+  }
+}`,
+      js: "",
+    }),
+  },
+  {
+    id: "ch-web-3",
+    trackId: "web",
+    title: "Alternador de Tema e Contador Interativo",
+    topic: "DOM, Eventos e Estado",
+    difficulty: "Difícil",
+    estimatedMinutes: 18,
+    xp: 160,
+    workbench: "web",
+    summary: "Integre alternância de classe CSS e contador com ações reais no DOM.",
+    prompt:
+      'Em script.js, conecte o botão #btn-tema para alternar a classe "escuro" no elemento #painel e atualizar #estado-tema ("Escuro" quando ativo ou "Claro"), e conecte #btn-passo para incrementar #passos em +1 a cada clique.',
+    starterCode: serializeWebFiles({
+      html: `<section id="painel" class="painel">
+  <p>Tema: <strong id="estado-tema">Claro</strong></p>
+  <button id="btn-tema" type="button">Alternar tema</button>
+  <hr />
+  <p>Passos: <strong id="passos">0</strong></p>
+  <button id="btn-passo" type="button">Avançar +1</button>
+</section>`,
+      css: `.painel { padding: 18px; border-radius: 12px; border: 1px solid #cbd5e1; }
+.painel.escuro { background-color: #0f172a; color: #f8fafc; border-color: #f97316; }`,
+      js: `// Implemente os eventos em #btn-tema e #btn-passo
+`,
+    }),
+    hints: [
+      'No clique de #btn-tema, faça const ativo = painel.classList.toggle("escuro");.',
+      'Atualize estadoTema.textContent = ativo ? "Escuro" : "Claro"; logo após o toggle.',
+      'No clique de #btn-passo, incremente let total = 0; total++; e atualize #passos.',
+    ],
+    webInspection: {
+      selectors: ["#painel", "#estado-tema", "#passos"],
+      interactions: [
+        { id: "temaOn", clickSelector: "#btn-tema", times: 1, observeSelector: "#painel" },
+        { id: "passo3", clickSelector: "#btn-passo", times: 3, observeSelector: "#passos" },
+      ],
+    },
+    objectives: [
+      {
+        id: "ch-web3-tema",
+        label: 'Alternar a classe "escuro" em #painel e atualizar #estado-tema',
+        test: ctx =>
+          Boolean(
+            ctx.web?.interactions.temaOn?.ok &&
+              ctx.web.interactions.temaOn.classes?.includes("escuro") &&
+              /estado-tema|estadoTema/.test(ctx.web?.files.js || "")
+          ),
+      },
+      {
+        id: "ch-web3-passos",
+        label: "Incrementar #passos em +1 a cada clique em #btn-passo (3 cliques -> 3)",
+        test: ctx => ctx.web?.interactions.passo3?.ok === true && ctx.web.interactions.passo3.text === "3",
+      },
+    ],
+    referenceSolution: serializeWebFiles({
+      html: `<section id="painel" class="painel">
+  <p>Tema: <strong id="estado-tema">Claro</strong></p>
+  <button id="btn-tema" type="button">Alternar tema</button>
+  <hr />
+  <p>Passos: <strong id="passos">0</strong></p>
+  <button id="btn-passo" type="button">Avançar +1</button>
+</section>`,
+      css: `.painel { padding: 18px; border-radius: 12px; border: 1px solid #cbd5e1; }
+.painel.escuro { background-color: #0f172a; color: #f8fafc; border-color: #f97316; }`,
+      js: `const painel = document.querySelector("#painel");
+const estadoTema = document.querySelector("#estado-tema");
+const btnTema = document.querySelector("#btn-tema");
+const btnPasso = document.querySelector("#btn-passo");
+const passosEl = document.querySelector("#passos");
+
+let passos = 0;
+
+btnTema.addEventListener("click", () => {
+  const escuroAtivo = painel.classList.toggle("escuro");
+  estadoTema.textContent = escuroAtivo ? "Escuro" : "Claro";
+});
+
+btnPasso.addEventListener("click", () => {
+  passos++;
+  passosEl.textContent = String(passos);
+});`,
+    }),
   },
 ];
 

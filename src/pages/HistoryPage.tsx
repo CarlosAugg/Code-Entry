@@ -7,6 +7,7 @@ import { AmbientAurora } from "../components/motion/AmbientAurora";
 import { ShinyText } from "../components/motion/ShinyText";
 import { TechIcon } from "../components/shared/TechIcon";
 import { Tooltip } from "../components/shared/Tooltip";
+import { HeroIllustration } from "../components/shared/HeroIllustration";
 
 function toLocalDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -60,7 +61,7 @@ export const HistoryPage: React.FC = () => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <section className="ce-hero-banner" style={{ gridTemplateColumns: "1fr auto" }}>
+      <section className="ce-hero-banner ce-hero-with-art">
         <AmbientAurora />
         <div>
           <span className="ce-badge" style={{ borderColor: "var(--border-accent)", color: "var(--accent-secondary)" }}>
@@ -75,9 +76,14 @@ export const HistoryPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="ce-metric-tile" style={{ minWidth: 140 }}>
-          <span>Registros salvos</span>
-          <strong>{data.history.length}</strong>
+        <div className="ce-hero-right-cluster">
+          <div className="ce-hero-art-slot" aria-hidden="true">
+            <HeroIllustration variant="history" />
+          </div>
+          <div className="ce-metric-tile" style={{ minWidth: 140 }}>
+            <span>Registros salvos</span>
+            <strong>{data.history.length}</strong>
+          </div>
         </div>
       </section>
 

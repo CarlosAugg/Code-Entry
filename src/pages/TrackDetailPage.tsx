@@ -7,11 +7,13 @@ import {
   ChevronDown,
   ChevronRight,
   Clock,
+  Map as MapIcon,
   Play,
   Swords,
 } from "lucide-react";
 import { CHALLENGES } from "../data/challenges";
 import { LESSONS_BY_TRACK } from "../data/lessons";
+import { getRoadmapsForTrack } from "../data/roadmaps";
 import { TRACK_MAP } from "../data/tracks";
 import { usePlatform } from "../context/PlatformContext";
 import type { Lesson, TrackId } from "../types/curriculum";
@@ -105,14 +107,36 @@ export const TrackDetailPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div className="ce-track-hero-panel">
             <ProgressRing
               percent={tp.percent}
-              size={96}
-              strokeWidth={8}
+              size={84}
+              strokeWidth={7.5}
               color={track.accentColor}
               sublabel="trilha"
             />
+            <div className="ce-track-hero-kpis">
+              <div>
+                <strong>
+                  {tp.completedLessons}/{tp.totalLessons}
+                </strong>
+                <span>aulas</span>
+              </div>
+              <div>
+                <strong>
+                  {tp.completedChallenges}/{tp.totalChallenges}
+                </strong>
+                <span>desafios</span>
+              </div>
+              <div>
+                <strong>{tp.xp} XP</strong>
+                <span>conquistados</span>
+              </div>
+              <div>
+                <strong>{modules.length}</strong>
+                <span>módulos</span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -190,16 +214,28 @@ export const TrackDetailPage: React.FC = () => {
             </div>
           )}
 
-          {track.recommendedNext && track.recommendedNext.length > 0 && (
+          {(track.recommendedNext && track.recommendedNext.length > 0) && (
             <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border-subtle)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8 }}>
-                <strong style={{ fontSize: 12.5 }}>Próximos passos no Roadmap</strong>
+                <strong style={{ fontSize: 12.5 }}>Próximos passos &amp; Roadmaps conectados</strong>
                 <Link to="/roadmaps" className="ce-link-more" style={{ fontSize: 12 }}>
-                  <span>Ver mapa</span>
+                  <span>Hub de Roadmaps</span>
                   <ArrowRight size={12} />
                 </Link>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {getRoadmapsForTrack(track.id).map(rm => (
+                  <Link
+                    key={rm.id}
+                    to={`/roadmaps/${rm.id}`}
+                    className="ce-btn ce-btn-ghost ce-btn-sm"
+                    style={{ borderColor: rm.accentBorder }}
+                  >
+                    <MapIcon size={13} style={{ color: rm.accentColor }} />
+                    <span>Roadmap {rm.shortTitle}</span>
+                    <ArrowRight size={12} />
+                  </Link>
+                ))}
                 {track.recommendedNext.map(nextId => {
                   const nt = TRACK_MAP[nextId];
                   if (!nt) return null;

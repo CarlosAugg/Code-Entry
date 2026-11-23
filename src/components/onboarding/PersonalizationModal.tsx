@@ -1,56 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Clock, Code2, Sparkles, User } from "lucide-react";
+import { ArrowRight, Code2, Compass, FolderKanban, Layers, User } from "lucide-react";
 import { usePlatform } from "../../context/PlatformContext";
-import { ThemePalettePicker } from "../shared/ThemePalettePicker";
-
-const DAILY_GOAL_PRESETS = [
-  { minutes: 15, label: "15 min", hint: "Ritmo leve" },
-  { minutes: 30, label: "30 min", hint: "Equilibrado" },
-  { minutes: 45, label: "45 min", hint: "Consistente" },
-  { minutes: 60, label: "60 min", hint: "Foco diário" },
-  { minutes: 90, label: "90 min", hint: "Imersão" },
-];
+import { AmbientAurora } from "../motion/AmbientAurora";
+import { InteractiveBackground } from "../motion/InteractiveBackground";
+import { LessonStageBackground } from "../motion/LessonStageBackground";
 
 export const PersonalizationModal: React.FC = () => {
-  const { data, personalizationOpen, completePersonalization, skipPersonalization } = usePlatform();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const {
+    data,
+    personalizationOpen,
+    justReset,
+    resetEpoch,
+    clearJustReset,
+    completePersonalization,
+    skipPersonalization,
+  } = usePlatform();
+
   const [name, setName] = useState("");
-  const [selectedPreset, setSelectedPreset] = useState<number | "custom">(30);
-  const [customMinutes, setCustomMinutes] = useState("25");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!personalizationOpen) return;
-    setStep(1);
     setName(data.settings.displayName === "Estudante" ? "" : data.settings.displayName);
-    const goal = data.settings.dailyGoalMinutes || 30;
-    const isPreset = DAILY_GOAL_PRESETS.some(p => p.minutes === goal);
-    if (isPreset) {
-      setSelectedPreset(goal);
-    } else {
-      setSelectedPreset("custom");
-      setCustomMinutes(String(goal));
-    }
     setErrorMsg(null);
-  }, [personalizationOpen, data.settings.displayName, data.settings.dailyGoalMinutes]);
+  }, [personalizationOpen, resetEpoch, data.settings.displayName]);
 
-  const effectiveMinutes =
-    selectedPreset === "custom"
-      ? Math.max(5, Math.min(240, Math.round(Number(customMinutes) || 30)))
-      : selectedPreset;
-
-  const previewName = name.trim() || "Estudante";
-
-  const handleFinish = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (saving) return;
     setSaving(true);
     setErrorMsg(null);
     try {
+      clearJustReset();
       await completePersonalization({
-        displayName: previewName,
-        dailyGoalMinutes: effectiveMinutes,
+        displayName: name.trim() || "Estudante",
+        dailyGoalMinutes: data.settings.dailyGoalMinutes || 30,
         theme: data.settings.theme,
         themePalette: data.settings.themePalette,
       });
@@ -65,286 +51,161 @@ export const PersonalizationModal: React.FC = () => {
     }
   };
 
+  const photoUrl = `${import.meta.env.BASE_URL}images/welcome-coding.jpg`;
+
   return (
     <AnimatePresence>
       {personalizationOpen && (
         <motion.div
-          className="ce-modal-backdrop"
-          style={{ zIndex: 982 }}
+          className="ce-welcome-screen"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.1 } }}
-          transition={{ duration: 0.18 }}
+          exit={{ opacity: 0, transition: { duration: 0.14 } }}
+          transition={{ duration: 0.2 }}
           role="dialog"
           aria-modal="true"
-          aria-labelledby="ce-personalize-title"
+          aria-labelledby="ce-welcome-title"
         >
-          <motion.div
-            className="ce-personalization-modal"
-            initial={{ opacity: 0, scale: 0.95, y: 14 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            transition={{ type: "spring", stiffness: 340, damping: 28 }}
-          >
-            {/* Cabeçalho */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div className="ce-brand-mark" aria-hidden="true">
-                  <Code2 size={18} strokeWidth={2.3} />
-                </div>
-                <div>
-                  <span style={{ fontSize: 11.5, color: "var(--accent-secondary)", fontWeight: 700, display: "block" }}>
-                    Configuração inicial · {step} de 3
-                  </span>
-                  <strong style={{ fontSize: 15 }}>Code Entry</strong>
-                </div>
-              </div>
+          <AmbientAurora speed={0.5} />
+          <InteractiveBackground
+            reducedMotion={Boolean(data.settings.reducedMotion)}
+            theme={data.settings.theme}
+            paletteId={data.settings.themePalette}
+          />
+          <LessonStageBackground />
 
-              <div style={{ display: "flex", gap: 5 }} aria-hidden="true">
-                {[1, 2, 3].map(idx => (
-                  <span
-                    key={idx}
-                    style={{
-                      width: step === idx ? 26 : 14,
-                      height: 5,
-                      borderRadius: 999,
-                      background:
-                        step === idx
-                          ? "var(--accent-secondary)"
-                          : step > idx
-                          ? "var(--accent-success)"
-                          : "rgba(148,163,184,0.24)",
-                      transition: "all 220ms ease",
-                    }}
-                  />
-                ))}
+          <a
+            href="https://github.com/CarlosAugg/Code-Entry"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ce-welcome-github-link"
+            aria-label="Repositório do Code Entry no GitHub"
+            title="GitHub · CarlosAugg/Code-Entry"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+              <path d="M12 0.3C5.37 0.3 0 5.67 0 12.3c0 5.31 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58 0-.29-.01-1.05-.02-2.06-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.33-1.76-1.33-1.76-1.09-.74.08-.73.08-.73 1.21.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6.01 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22 0 1.6-.01 2.9-.01 3.29 0 .32.22.7.83.58C20.57 22.1 24 17.61 24 12.3 24 5.67 18.63 0.3 12 0.3Z" />
+            </svg>
+          </a>
+
+          <motion.div
+            className="ce-welcome-open-grid"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.24 }}
+          >
+            {/* Coluna Esquerda: Cena em formato D com desfoque sutil de 1px (Lia 2D integrada na imagem) */}
+            <div className="ce-welcome-visual-col">
+              <div className="ce-welcome-photo-frame">
+                <img
+                  src={photoUrl}
+                  alt="Estudante programando no Code Entry acompanhado pela robô Lia em 2D"
+                  className="ce-welcome-photo"
+                />
               </div>
             </div>
 
-            {/* Corpo animado por etapa */}
-            <AnimatePresence mode="wait">
-              {step === 1 && (
-                <motion.form
-                  key="step-name"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.2 }}
-                  onSubmit={e => {
-                    e.preventDefault();
-                    setStep(2);
-                  }}
-                  style={{ display: "flex", flexDirection: "column", gap: 14 }}
-                >
-                  <div>
-                    <h2 id="ce-personalize-title" style={{ fontSize: 21, lineHeight: 1.25 }}>
-                      Como devemos chamar você?
-                    </h2>
-                    <p style={{ fontSize: 13.5, color: "var(--text-secondary)", marginTop: 6, lineHeight: 1.55 }}>
-                      Use apenas seu primeiro nome ou apelido. Vamos usá-lo para deixar o painel e o roteiro de boas-vindas com a sua cara.
-                    </p>
+            {/* Coluna Direita: Identidade centralizada, Pilares e Formulário sobre o fundo Aurora */}
+            <div className="ce-welcome-content-col">
+              <div className="ce-welcome-glow-orb" aria-hidden="true" />
+
+              <motion.div
+                className="ce-welcome-brand"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: 0.05 }}
+              >
+                <div className="ce-brand-mark" aria-hidden="true">
+                  <Code2 size={32} strokeWidth={2.3} />
+                </div>
+                <div className="ce-welcome-brand-text">
+                  <strong>Code Entry</strong>
+                  <span>Aprenda. Pratique. Evolua.</span>
+                </div>
+              </motion.div>
+
+              {justReset && (
+                <div className="ce-welcome-reset-notice" role="status">
+                  Progresso local apagado com sucesso. Tudo pronto para começar do zero.
+                </div>
+              )}
+
+              <motion.div
+                className="ce-welcome-copy"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: 0.1 }}
+              >
+                <h1 id="ce-welcome-title">Aprenda tecnologia praticando direto no navegador</h1>
+              </motion.div>
+
+              <motion.div
+                className="ce-welcome-pillars"
+                aria-label="Pilares da plataforma"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: 0.15 }}
+              >
+                <span>
+                  <Layers size={15} style={{ color: "var(--accent-secondary)" }} />
+                  Trilhas guiadas
+                </span>
+                <span>
+                  <Compass size={15} style={{ color: "var(--accent-tertiary)" }} />
+                  Roadmaps por objetivo
+                </span>
+                <span>
+                  <FolderKanban size={15} style={{ color: "var(--accent-success)" }} />
+                  Projetos integradores
+                </span>
+              </motion.div>
+
+              <motion.form
+                onSubmit={handleSubmit}
+                className="ce-welcome-form"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: 0.2 }}
+              >
+                <label htmlFor="ce-welcome-name-input" className="ce-welcome-label is-centered">
+                  <User size={15} />
+                  <span>Como devemos chamar você?</span>
+                </label>
+
+                <input
+                  id="ce-welcome-name-input"
+                  autoFocus
+                  className="ce-input ce-welcome-input"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  maxLength={32}
+                  placeholder="Seu primeiro nome ou apelido"
+                />
+
+                {errorMsg && (
+                  <div role="alert" style={{ fontSize: 12.5, color: "var(--accent-danger)" }}>
+                    {errorMsg}
                   </div>
+                )}
 
-                  <label style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      <User size={13} />
-                      <span>Nome ou apelido</span>
-                    </span>
-                    <input
-                      autoFocus
-                      className="ce-input"
-                      style={{ height: 44, fontSize: 15, padding: "0 14px" }}
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      maxLength={32}
-                      placeholder="Ex.: Marina, Lucas, Dani..."
-                      aria-label="Nome ou apelido"
-                    />
-                  </label>
-
-                  <div
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 11,
-                      background: "var(--accent-soft)",
-                      border: "1px solid var(--border-accent-soft)",
-                      fontSize: 12.5,
-                      color: "var(--text-secondary)",
+                <div className="ce-welcome-actions">
+                  <button type="submit" className="ce-btn ce-btn-primary" disabled={saving}>
+                    <span>{saving ? "Entrando..." : "Entrar no Code Entry"}</span>
+                    <ArrowRight size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="ce-welcome-skip-link"
+                    onClick={() => {
+                      clearJustReset();
+                      skipPersonalization();
                     }}
                   >
-                    <Sparkles size={13} style={{ color: "var(--accent-secondary)", verticalAlign: "middle", marginRight: 6 }} />
-                    Prévia da saudação:{" "}
-                    <strong style={{ color: "var(--text-primary)" }}>Bem-vindo(a), {previewName}!</strong>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 6 }}>
-                    <button
-                      type="button"
-                      className="ce-btn ce-btn-ghost ce-btn-sm"
-                      onClick={() => skipPersonalization()}
-                    >
-                      Pular esta etapa
-                    </button>
-                    <button type="submit" className="ce-btn ce-btn-primary">
-                      <span>Continuar</span>
-                      <ArrowRight size={15} />
-                    </button>
-                  </div>
-                </motion.form>
-              )}
-
-              {step === 2 && (
-                <motion.div
-                  key="step-theme"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
-                  style={{ display: "flex", flexDirection: "column", gap: 14 }}
-                >
-                  <div>
-                    <h2 id="ce-personalize-title" style={{ fontSize: 21, lineHeight: 1.25 }}>
-                      Personalize o visual do seu ambiente, {previewName}
-                    </h2>
-                    <p style={{ fontSize: 13.5, color: "var(--text-secondary)", marginTop: 6, lineHeight: 1.55 }}>
-                      Escolha entre modo escuro ou claro e experimente ao vivo uma das quatro paletas de cada modo. Você poderá alterar quando quiser no seu perfil.
-                    </p>
-                  </div>
-
-                  <ThemePalettePicker variant="onboarding" />
-
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 6 }}>
-                    <button
-                      type="button"
-                      className="ce-btn ce-btn-ghost ce-btn-sm"
-                      onClick={() => setStep(1)}
-                    >
-                      <ArrowLeft size={14} />
-                      <span>Voltar</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="ce-btn ce-btn-primary"
-                      onClick={() => setStep(3)}
-                    >
-                      <span>Definir ritmo diário</span>
-                      <ArrowRight size={15} />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {step === 3 && (
-                <motion.div
-                  key="step-goal"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
-                  style={{ display: "flex", flexDirection: "column", gap: 14 }}
-                >
-                  <div>
-                    <h2 id="ce-personalize-title" style={{ fontSize: 21, lineHeight: 1.25 }}>
-                      Quanto tempo pretende estudar por dia, {previewName}?
-                    </h2>
-                    <p style={{ fontSize: 13.5, color: "var(--text-secondary)", marginTop: 6, lineHeight: 1.55 }}>
-                      Essa escolha serve apenas como referência pessoal para acompanhar seu ritmo — sem cobranças e fácil de ajustar depois no seu perfil.
-                    </p>
-                  </div>
-
-                  <div className="ce-goal-grid" role="radiogroup" aria-label="Meta diária de estudo">
-                    {DAILY_GOAL_PRESETS.map(opt => {
-                      const active = selectedPreset === opt.minutes;
-                      return (
-                        <button
-                          key={opt.minutes}
-                          type="button"
-                          role="radio"
-                          aria-checked={active}
-                          className={`ce-goal-option ${active ? "is-selected" : ""}`}
-                          onClick={() => setSelectedPreset(opt.minutes)}
-                        >
-                          <strong>{opt.label}</strong>
-                          <span>{opt.hint}</span>
-                        </button>
-                      );
-                    })}
-
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={selectedPreset === "custom"}
-                      className={`ce-goal-option ${selectedPreset === "custom" ? "is-selected" : ""}`}
-                      onClick={() => setSelectedPreset("custom")}
-                    >
-                      <strong>Personalizar</strong>
-                      <span>Outro tempo</span>
-                    </button>
-                  </div>
-
-                  {selectedPreset === "custom" && (
-                    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-secondary)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <Clock size={13} />
-                        <span>Tempo personalizado em minutos (5 a 240)</span>
-                      </span>
-                      <input
-                        type="number"
-                        className="ce-input"
-                        style={{ height: 42 }}
-                        min={5}
-                        max={240}
-                        value={customMinutes}
-                        onChange={e => setCustomMinutes(e.target.value)}
-                        aria-label="Minutos personalizados por dia"
-                      />
-                    </label>
-                  )}
-
-                  {errorMsg && (
-                    <div
-                      style={{
-                        padding: "9px 12px",
-                        borderRadius: 10,
-                        background: "rgba(248, 113, 113, 0.12)",
-                        border: "1px solid rgba(248, 113, 113, 0.35)",
-                        fontSize: 12.5,
-                        color: "var(--accent-danger)",
-                      }}
-                    >
-                      {errorMsg}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      className="ce-btn ce-btn-ghost ce-btn-sm"
-                      onClick={() => setStep(2)}
-                    >
-                      <ArrowLeft size={14} />
-                      <span>Voltar</span>
-                    </button>
-
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                        Meta: <strong style={{ color: "var(--text-primary)" }}>{effectiveMinutes} min/dia</strong>
-                      </span>
-                      <button
-                        type="button"
-                        className="ce-btn ce-btn-primary"
-                        disabled={saving}
-                        onClick={handleFinish}
-                      >
-                        <span>{saving ? "Salvando..." : "Começar tour guiado"}</span>
-                        <ArrowRight size={15} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    Pular por enquanto
+                  </button>
+                </div>
+              </motion.form>
+            </div>
           </motion.div>
         </motion.div>
       )}

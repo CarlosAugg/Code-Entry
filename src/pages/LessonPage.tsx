@@ -5,20 +5,34 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  BrainCircuit,
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Code2,
-  Copy,
   Lightbulb,
+  Map as MapIcon,
+  RotateCcw,
   Target,
 } from "lucide-react";
+import { extractGlossaryTermsFromText } from "../data/glossary";
+import { getRecallQuestionsForLesson } from "../data/lessonRecall";
 import { LESSON_MAP, LESSONS_BY_TRACK } from "../data/lessons";
+import { getRoadmapNodesForLesson } from "../data/roadmaps";
 import { TRACK_MAP } from "../data/tracks";
 import { usePlatform } from "../context/PlatformContext";
 import type { EvaluationContext, Lesson, TrackId } from "../types/curriculum";
 import { AmbientAurora } from "../components/motion/AmbientAurora";
+import { AnnotatedCodeBlock, AnnotatedText, GlossaryTerm } from "../components/shared/GlossaryTerm";
 import { TechIcon } from "../components/shared/TechIcon";
+import { LessonConceptDiagram } from "../components/study/LessonConceptDiagram";
+import {
+  hasInteractiveTheater,
+  LessonInteractiveTheater,
+} from "../components/study/LessonInteractiveTheater";
 import { CodeWorkbench } from "../components/workbenches/CodeWorkbench";
+import { WebWorkbench } from "../components/workbenches/WebWorkbench";
 import { LinuxWorkbench } from "../components/workbenches/LinuxWorkbench";
 import { SqlWorkbench } from "../components/workbenches/SqlWorkbench";
 import { NetworkWorkbench } from "../components/workbenches/NetworkWorkbench";
@@ -33,7 +47,7 @@ function difficultyBadgeClass(diff: string): string {
 export const LessonPage: React.FC = () => {
   const { trackId, lessonId } = useParams<{ trackId: string; lessonId: string }>();
   const navigate = useNavigate();
-  const { data, recordLessonResult, saveDraft, saveWorkspace } = usePlatform();
+  const { data, resetEpoch, recordLessonResult, saveDraft, saveWorkspace } = usePlatform();
 
   const resolvedTrackId = (trackId && trackId in TRACK_MAP ? trackId : "js") as TrackId;
   const track = TRACK_MAP[resolvedTrackId];
@@ -45,31 +59,84 @@ export const LessonPage: React.FC = () => {
 
   const [code, setCode] = useState(savedDraft?.code ?? lesson.starterCode);
   const [stdin, setStdin] = useState(savedDraft?.stdin ?? lesson.defaultStdin ?? "");
-  const [activeTab, setActiveTab] = useState<"theory" | "examples" | "challenge" | "hints">("theory");
+  const [activeTab, setActiveTab] = useState<"learn" | "examples" | "practice" | "retain">("learn");
+  const [pedagogyCollapsed, setPedagogyCollapsed] = useState(false);
+  const [openAidPanel, setOpenAidPanel] = useState<"outline" | "vocab" | "roadmap" | null>(null);
   const [mobilePane, setMobilePane] = useState<"content" | "workbench">("content");
   const [hintLevel, setHintLevel] = useState(0); // 0 = nenhuma aberta, 1..3 níveis revelados
   const [liveDoneIds, setLiveDoneIds] = useState<string[]>(
     () => data.lessonProgress[lesson.id]?.objectivesDone || []
   );
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [recallAnswers, setRecallAnswers] = useState<Record<string, number>>({});
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
+    savedDraft ? "saved" : "idle"
+  );
+  const [saveError, setSaveError] = useState<string | null>(null);
   const draftTimerRef = useRef<number | null>(null);
+  const pendingDraftRef = useRef<{ key: string; code: string; stdin: string } | null>(null);
+  const saveDraftRef = useRef(saveDraft);
+  saveDraftRef.current = saveDraft;
+  const mountedEpochRef = useRef(resetEpoch);
+  const resetEpochRef = useRef(resetEpoch);
+  resetEpochRef.current = resetEpoch;
+
+  const flushPendingDraft = () => {
+    if (draftTimerRef.current) {
+      window.clearTimeout(draftTimerRef.current);
+      draftTimerRef.current = null;
+    }
+    const pending = pendingDraftRef.current;
+    pendingDraftRef.current = null;
+    if (resetEpochRef.current !== mountedEpochRef.current) return;
+    if (pending) {
+      saveDraftRef.current(pending.key, pending.code, pending.stdin).catch(() => {});
+    }
+  };
 
   useEffect(() => {
+    flushPendingDraft();
     const nextDraft = data.drafts[`lesson:${lesson.id}`];
     setCode(nextDraft?.code ?? lesson.starterCode);
     setStdin(nextDraft?.stdin ?? lesson.defaultStdin ?? "");
     setLiveDoneIds(data.lessonProgress[lesson.id]?.objectivesDone || []);
     setHintLevel(0);
-    setActiveTab("theory");
+    setActiveTab("learn");
+    setPedagogyCollapsed(false);
+    setOpenAidPanel(null);
+    setRecallAnswers({});
     setMobilePane("content");
+    setSaveStatus(nextDraft ? "saved" : "idle");
+    setSaveError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lesson.id]);
 
+  useEffect(() => {
+    return () => {
+      flushPendingDraft();
+    };
+  }, []);
+
   // Auto-save rascunho de código/stdin com debounce
   const scheduleDraftSave = (nextCode: string, nextStdin: string) => {
+    setSaveStatus("saving");
+    setSaveError(null);
+    pendingDraftRef.current = { key: draftKey, code: nextCode, stdin: nextStdin };
     if (draftTimerRef.current) window.clearTimeout(draftTimerRef.current);
     draftTimerRef.current = window.setTimeout(() => {
-      saveDraft(draftKey, nextCode, nextStdin).catch(() => {});
+      const payload = pendingDraftRef.current;
+      pendingDraftRef.current = null;
+      draftTimerRef.current = null;
+      if (!payload) return;
+      saveDraftRef
+        .current(payload.key, payload.code, payload.stdin)
+        .then(() => {
+          setSaveStatus("saved");
+        })
+        .catch(err => {
+          setSaveStatus("error");
+          setSaveError(err instanceof Error ? err.message : "Erro ao salvar rascunho localmente.");
+        });
     }, 650);
   };
 
@@ -125,6 +192,76 @@ export const LessonPage: React.FC = () => {
     () => lesson.objectives.filter(o => liveDoneIds.includes(o.id)).length,
     [lesson.objectives, liveDoneIds]
   );
+
+  const preferredGlossaryCategories = useMemo(() => {
+    switch (track.id) {
+      case "web":
+        return ["web", "js"];
+      case "js":
+        return ["js", "web", "logic"];
+      case "cpp":
+        return ["cpp", "logic"];
+      case "python":
+        return ["python", "logic"];
+      case "database":
+        return ["sql"];
+      case "linux":
+      case "networks":
+        return ["infra", "architecture"];
+      default:
+        return ["logic", "js"];
+    }
+  }, [track.id]);
+
+  const recallQuestions = useMemo(() => getRecallQuestionsForLesson(lesson), [lesson]);
+  const roadmapLinks = useMemo(
+    () => getRoadmapNodesForLesson(lesson.id, track.id),
+    [lesson.id, track.id]
+  );
+  const vocabularyEntries = useMemo(() => {
+    const raw = [
+      lesson.title,
+      lesson.summary,
+      lesson.prompt,
+      ...lesson.theoryBlocks.map(b => [b.title || "", b.content || "", b.code || ""].join(" ")),
+      ...lesson.examples.map(e => [e.title, e.description, e.code].join(" ")),
+    ].join(" ");
+    return extractGlossaryTermsFromText(raw, preferredGlossaryCategories).slice(0, 10);
+  }, [lesson, preferredGlossaryCategories]);
+
+  const theoryOutline = useMemo(
+    () =>
+      lesson.theoryBlocks
+        .map((block, idx) => ({ id: `ce-sec-${idx}`, title: block.title }))
+        .filter((item): item is { id: string; title: string } => Boolean(item.title)),
+    [lesson.theoryBlocks]
+  );
+
+  const isPracticeSplit = true;
+  const allObjectivesNowDone = passedCount === lesson.objectives.length && lesson.objectives.length > 0;
+  const showFixarTab = isAlreadyCompleted || allObjectivesNowDone || activeTab === "retain";
+  const canTrySnippetInEditor = lesson.workbench === "code" || lesson.workbench === "sql";
+
+  const handleCopySnippet = (key: string, snippet: string) => {
+    navigator.clipboard?.writeText(snippet);
+    setCopiedKey(key);
+    window.setTimeout(() => {
+      setCopiedKey(prev => (prev === key ? null : prev));
+    }, 1500);
+  };
+
+  const handleTrySnippetInEditor = (snippet: string) => {
+    handleChangeCode(snippet);
+    setActiveTab("practice");
+    setMobilePane("workbench");
+  };
+
+  const recallCorrectCount = recallQuestions.filter(
+    q => recallAnswers[q.id] === q.correctIndex
+  ).length;
+  const recallAnsweredCount = recallQuestions.filter(
+    q => recallAnswers[q.id] !== undefined
+  ).length;
 
   return (
     <div
@@ -244,19 +381,32 @@ export const LessonPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Split Workspace: Conteúdo Pedagógico à Esquerda | Workbench Interativo à Direita */}
-      <div className="ce-lesson-split" data-tour="lesson-workspace">
+      {/* Split Workspace: Leitura confortável em Aprender/Exemplos/Fixar | Lado a lado em Praticar */}
+      <div
+        className={`ce-lesson-split ${lesson.workbench === "web" ? "is-web-layout" : ""} ${
+          isPracticeSplit ? "is-practice-split" : "is-reading-mode"
+        } ${pedagogyCollapsed ? "is-pedagogy-collapsed" : ""}`}
+        data-tour="lesson-workspace"
+      >
         <section
-          className={`ce-pedagogy-panel ${mobilePane === "workbench" ? "is-mobile-hidden" : ""}`}
+          className={`ce-pedagogy-panel ${mobilePane === "workbench" ? "is-mobile-hidden" : ""} ${
+            pedagogyCollapsed ? "is-collapsed" : ""
+          }`}
           aria-label="Conteúdo didático da aula"
         >
           <div className="ce-tabs-bar" data-tour="lesson-tabs" role="tablist">
             {(
               [
-                { id: "theory" as const, label: "Teoria", icon: BookOpen },
-                { id: "examples" as const, label: "Exemplos", icon: Code2 },
-                { id: "challenge" as const, label: `Desafio (${passedCount}/${lesson.objectives.length})`, icon: Target },
-                { id: "hints" as const, label: "Dicas", icon: Lightbulb },
+                { id: "learn" as const, label: "1. Aprender", icon: BookOpen },
+                { id: "examples" as const, label: "2. Exemplos", icon: Code2 },
+                {
+                  id: "practice" as const,
+                  label: `3. Praticar (${passedCount}/${lesson.objectives.length})`,
+                  icon: Target,
+                },
+                ...(showFixarTab
+                  ? [{ id: "retain" as const, label: "4. Revisão & Fixar", icon: BrainCircuit }]
+                  : []),
               ] as const
             ).map(tab => {
               const Icon = tab.icon;
@@ -269,7 +419,10 @@ export const LessonPage: React.FC = () => {
                   aria-selected={isSelected}
                   className={`ce-tab-btn ${isSelected ? "is-active" : ""}`}
                   style={{ position: "relative" }}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setPedagogyCollapsed(false);
+                  }}
                 >
                   <Icon size={13} style={{ position: "relative", zIndex: 1 }} />
                   <span style={{ position: "relative", zIndex: 1 }}>{tab.label}</span>
@@ -292,43 +445,78 @@ export const LessonPage: React.FC = () => {
                 </button>
               );
             })}
+
+            <button
+              type="button"
+              className="ce-pedagogy-collapse-btn"
+              onClick={() => setPedagogyCollapsed(c => !c)}
+              title={pedagogyCollapsed ? "Expandir painel da aula" : "Recolher painel da aula"}
+              aria-label={pedagogyCollapsed ? "Expandir painel da aula" : "Recolher painel da aula"}
+              aria-expanded={!pedagogyCollapsed}
+            >
+              {pedagogyCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              className="ce-pedagogy-body"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.14 }}
-            >
-            {activeTab === "theory" && (
+          {!pedagogyCollapsed && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                className="ce-pedagogy-body"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.14 }}
+              >
+            {activeTab === "learn" && (
               <>
+                {hasInteractiveTheater(lesson.id) && (
+                  <LessonInteractiveTheater
+                    lesson={lesson}
+                    track={track}
+                    onGoToPractice={() => {
+                      setActiveTab("practice");
+                      setMobilePane("workbench");
+                    }}
+                    onGoToExamples={() => setActiveTab("examples")}
+                    onSwitchToTextMode={() => {}}
+                  />
+                )}
+
+                <LessonConceptDiagram lesson={lesson} track={track} />
+
                 {lesson.theoryBlocks.map((block, idx) => {
                   if (block.kind === "text") {
                     return (
-                      <div key={idx}>
+                      <div key={idx} id={`ce-sec-${idx}`}>
                         {block.title && (
                           <h2 style={{ fontSize: 15.5, marginBottom: 6 }}>{block.title}</h2>
                         )}
-                        <p style={{ fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.65 }}>
-                          {block.content}
+                        <p style={{ fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.68 }}>
+                          <AnnotatedText
+                            text={block.content}
+                            categories={preferredGlossaryCategories}
+                          />
                         </p>
                       </div>
                     );
                   }
                   if (block.kind === "callout") {
                     return (
-                      <div key={idx} className="ce-callout">
+                      <div key={idx} id={`ce-sec-${idx}`} className="ce-callout">
                         {block.title && <strong style={{ display: "block", marginBottom: 4 }}>{block.title}</strong>}
-                        <span style={{ color: "var(--text-secondary)" }}>{block.content}</span>
+                        <span style={{ color: "var(--text-secondary)" }}>
+                          <AnnotatedText
+                            text={block.content}
+                            categories={preferredGlossaryCategories}
+                          />
+                        </span>
                       </div>
                     );
                   }
                   if (block.kind === "table" && block.headers && block.rows) {
                     return (
-                      <table key={idx} className="ce-table">
+                      <table key={idx} id={`ce-sec-${idx}`} className="ce-table">
                         <thead>
                           <tr>
                             {block.headers.map(h => (
@@ -341,7 +529,14 @@ export const LessonPage: React.FC = () => {
                             <tr key={rIdx}>
                               {r.map((cell, cIdx) => (
                                 <td key={cIdx}>
-                                  {cIdx === 0 ? <code>{cell}</code> : cell}
+                                  {cIdx === 0 ? (
+                                    <code>{cell}</code>
+                                  ) : (
+                                    <AnnotatedText
+                                      text={cell}
+                                      categories={preferredGlossaryCategories}
+                                    />
+                                  )}
                                 </td>
                               ))}
                             </tr>
@@ -350,89 +545,181 @@ export const LessonPage: React.FC = () => {
                       </table>
                     );
                   }
-                  if (block.kind === "code") {
+                  if (block.kind === "code" && block.code) {
+                    const clipKey = `theory-${idx}`;
                     return (
-                      <pre key={idx} className="ce-code-sample">
-                        <code>{block.code}</code>
-                      </pre>
+                      <AnnotatedCodeBlock
+                        key={idx}
+                        code={block.code}
+                        language={block.language || track.id}
+                        title={block.title}
+                        onCopy={() => handleCopySnippet(clipKey, block.code || "")}
+                        copied={copiedKey === clipKey}
+                        onTryInEditor={
+                          canTrySnippetInEditor
+                            ? () => handleTrySnippetInEditor(block.code || "")
+                            : undefined
+                        }
+                      />
                     );
                   }
                   return null;
                 })}
 
-                <div
-                  style={{
-                    marginTop: 4,
-                    padding: 13,
-                    borderRadius: 12,
-                    background: "var(--bg-surface-elevated)",
-                    border: "1px solid var(--border-subtle)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 10,
-                  }}
-                >
-                  <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
-                    Pronto para praticar esta lição?
-                  </span>
-                  <button
-                    type="button"
-                    className="ce-btn ce-btn-ghost ce-btn-sm"
-                    onClick={() => setActiveTab("challenge")}
-                  >
-                    <span>Ver Desafio &amp; Objetivos</span>
-                    <ArrowRight size={13} />
-                  </button>
-                </div>
+                {(theoryOutline.length > 0 || vocabularyEntries.length > 0 || roadmapLinks.length > 0) && (
+                  <div className="ce-study-aids-wrap is-bottom-subtle">
+                    <div className="ce-study-aids-triggers">
+                      <span className="ce-study-aids-label">Apoio:</span>
+                      {theoryOutline.length > 0 && (
+                        <button
+                          type="button"
+                          className={`ce-chip ${openAidPanel === "outline" ? "is-active" : ""}`}
+                          onClick={() =>
+                            setOpenAidPanel(prev => (prev === "outline" ? null : "outline"))
+                          }
+                          aria-expanded={openAidPanel === "outline"}
+                        >
+                          <span>Sumário ({theoryOutline.length})</span>
+                          <ChevronDown size={12} />
+                        </button>
+                      )}
+                      {vocabularyEntries.length > 0 && (
+                        <button
+                          type="button"
+                          className={`ce-chip ${openAidPanel === "vocab" ? "is-active" : ""}`}
+                          onClick={() =>
+                            setOpenAidPanel(prev => (prev === "vocab" ? null : "vocab"))
+                          }
+                          aria-expanded={openAidPanel === "vocab"}
+                        >
+                          <span>Vocabulário ({vocabularyEntries.length})</span>
+                          <ChevronDown size={12} />
+                        </button>
+                      )}
+                      {roadmapLinks.length > 0 && (
+                        <button
+                          type="button"
+                          className={`ce-chip ${openAidPanel === "roadmap" ? "is-active" : ""}`}
+                          onClick={() =>
+                            setOpenAidPanel(prev => (prev === "roadmap" ? null : "roadmap"))
+                          }
+                          aria-expanded={openAidPanel === "roadmap"}
+                        >
+                          <MapIcon size={12} />
+                          <span>No Roadmap ({roadmapLinks.length})</span>
+                          <ChevronDown size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {openAidPanel === "outline" && theoryOutline.length > 0 && (
+                      <div className="ce-study-aid-drawer">
+                        {theoryOutline.map(sec => (
+                          <button
+                            key={sec.id}
+                            type="button"
+                            className="ce-study-outline-item"
+                            onClick={() => {
+                              document.getElementById(sec.id)?.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              });
+                            }}
+                          >
+                            <span className="ce-study-outline-dot" />
+                            <span>{sec.title}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {openAidPanel === "vocab" && vocabularyEntries.length > 0 && (
+                      <div className="ce-study-aid-drawer">
+                        <div className="ce-rm-glossary-pills">
+                          {vocabularyEntries.map(entry => (
+                            <GlossaryTerm key={entry.id} entry={entry} variant="pill">
+                              {entry.term}
+                            </GlossaryTerm>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {openAidPanel === "roadmap" && roadmapLinks.length > 0 && (
+                      <div className="ce-study-aid-drawer">
+                        <div className="ce-study-rail-roadmaps">
+                          {roadmapLinks.map(({ roadmap, node }) => (
+                            <Link
+                              key={`${roadmap.id}-${node.id}`}
+                              to={`/roadmaps/${roadmap.id}?topico=${node.id}`}
+                              className="ce-study-rail-rm-link"
+                            >
+                              <div>
+                                <strong>{node.shortTitle || node.title}</strong>
+                                <span>Roadmap {roadmap.shortTitle}</span>
+                              </div>
+                              <ArrowRight size={13} />
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )}
 
             {activeTab === "examples" && (
               <>
-                {lesson.examples.map((ex, idx) => (
-                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                {lesson.examples.map((ex, idx) => {
+                  const clipKey = `ex-${idx}`;
+                  return (
+                    <div key={idx} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       <strong style={{ fontSize: 14 }}>{ex.title}</strong>
-                      <button
-                        type="button"
-                        className="ce-btn ce-btn-ghost ce-btn-sm"
-                        onClick={() => {
-                          navigator.clipboard?.writeText(ex.code);
-                          setCopiedIdx(idx);
-                          setTimeout(() => setCopiedIdx(null), 1500);
-                        }}
-                      >
-                        <Copy size={12} />
-                        <span>{copiedIdx === idx ? "Copiado!" : "Copiar"}</span>
-                      </button>
+                      <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                        <AnnotatedText
+                          text={ex.description}
+                          categories={preferredGlossaryCategories}
+                        />
+                      </p>
+                      <AnnotatedCodeBlock
+                        code={ex.code}
+                        language={track.id}
+                        title="Código comentado (passe o mouse ou clique nos termos)"
+                        onCopy={() => handleCopySnippet(clipKey, ex.code)}
+                        copied={copiedKey === clipKey}
+                        onTryInEditor={
+                          canTrySnippetInEditor
+                            ? () => handleTrySnippetInEditor(ex.code)
+                            : undefined
+                        }
+                      />
+                      {ex.output && (
+                        <div style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                          Saída esperada: <span style={{ color: "var(--accent-success)" }}>{ex.output}</span>
+                        </div>
+                      )}
                     </div>
-                    <p style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{ex.description}</p>
-                    <pre className="ce-code-sample">
-                      <code>{ex.code}</code>
-                    </pre>
-                    {ex.output && (
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
-                        Saída esperada: <span style={{ color: "var(--accent-success)" }}>{ex.output}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </>
             )}
 
-            {activeTab === "challenge" && (
+            {activeTab === "practice" && (
               <>
                 <div>
-                  <h2 style={{ fontSize: 15, marginBottom: 6 }}>Atividade Prática</h2>
+                  <h2 style={{ fontSize: 15, marginBottom: 6 }}>O que fazer no editor</h2>
                   <p style={{ fontSize: 13.5, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    {lesson.prompt}
+                    <AnnotatedText
+                      text={lesson.prompt}
+                      categories={preferredGlossaryCategories}
+                    />
                   </p>
                 </div>
 
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <strong style={{ fontSize: 13 }}>Objetivos desta aula</strong>
+                    <strong style={{ fontSize: 13 }}>Como saber que concluiu</strong>
                     <span className="ce-badge">
                       {passedCount} / {lesson.objectives.length}
                     </span>
@@ -454,7 +741,7 @@ export const LessonPage: React.FC = () => {
                   </ul>
                 </div>
 
-                {isAlreadyCompleted && (
+                {(isAlreadyCompleted || allObjectivesNowDone) && (
                   <div
                     style={{
                       padding: 14,
@@ -469,97 +756,218 @@ export const LessonPage: React.FC = () => {
                     }}
                   >
                     <div style={{ fontSize: 13, color: "#4ade80", fontWeight: 600 }}>
-                      Objetivos atendidos! Aula concluída (+{lesson.xp} XP).
+                      Objetivos atendidos! Feche com a revisão rápida para fixar (+{lesson.xp} XP).
                     </div>
-                    {nextLesson && (
-                      <button
-                        type="button"
-                        className="ce-btn ce-btn-primary ce-btn-sm"
-                        onClick={() => navigate(`/trilhas/${track.id}/aula/${nextLesson.id}`)}
-                      >
-                        <span>Avançar para {nextLesson.title}</span>
-                        <ArrowRight size={13} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="ce-btn ce-btn-primary ce-btn-sm"
+                      onClick={() => setActiveTab("retain")}
+                    >
+                      <BrainCircuit size={13} />
+                      <span>Revisar &amp; Fixar</span>
+                      <ArrowRight size={13} />
+                    </button>
                   </div>
                 )}
+
+                {/* Dicas progressivas integradas direto na aba Praticar */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <strong style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <Lightbulb size={14} style={{ color: "var(--accent-warning)" }} />
+                      <span>Dicas progressivas ({hintLevel}/3)</span>
+                    </strong>
+                    <span style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
+                      Revele por etapas apenas se travar
+                    </span>
+                  </div>
+
+                  {(
+                    [
+                      { level: 1, label: "Nível 1 — Pista Conceitual", text: lesson.hints[0] },
+                      { level: 2, label: "Nível 2 — Orientação Prática", text: lesson.hints[1] },
+                      { level: 3, label: "Nível 3 — Explicação Detalhada", text: lesson.hints[2] },
+                    ] as const
+                  ).map(h => {
+                    const unlocked = hintLevel >= h.level;
+                    const canReveal = hintLevel === h.level - 1;
+                    return (
+                      <div
+                        key={h.level}
+                        style={{
+                          padding: 12,
+                          borderRadius: 12,
+                          background: "var(--bg-surface-elevated)",
+                          border: `1px solid ${unlocked ? track.accentBorder : "var(--border-subtle)"}`,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                          <strong style={{ fontSize: 12.5, color: unlocked ? track.accentSecondary : "var(--text-primary)" }}>
+                            {h.label}
+                          </strong>
+                          {!unlocked && (
+                            <button
+                              type="button"
+                              className="ce-btn ce-btn-ghost ce-btn-sm"
+                              disabled={!canReveal}
+                              onClick={() => setHintLevel(h.level)}
+                            >
+                              {canReveal ? `Revelar Nível ${h.level}` : `Libere o Nível ${h.level - 1} antes`}
+                            </button>
+                          )}
+                        </div>
+                        {unlocked && (
+                          <pre
+                            style={{
+                              margin: "8px 0 0",
+                              whiteSpace: "pre-wrap",
+                              fontFamily: "var(--font-sans)",
+                              fontSize: 12.5,
+                              color: "var(--text-secondary)",
+                              lineHeight: 1.55,
+                            }}
+                          >
+                            {h.text}
+                          </pre>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </>
             )}
 
-            {activeTab === "hints" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  Nosso sistema de dicas revela orientações em 3 níveis progressivos para ajudar você a raciocinar sem entregar a resposta antes da hora.
-                </p>
+            {activeTab === "retain" && (
+              <div className="ce-recall-wrap">
+                <div className="ce-recall-head">
+                  <div>
+                    <strong style={{ fontSize: 14, display: "inline-flex", alignItems: "center", gap: 7 }}>
+                      <BrainCircuit size={15} style={{ color: track.accentColor }} />
+                      <span>Verificação Rápida &amp; Retenção</span>
+                    </strong>
+                    <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 3 }}>
+                      Teste seu entendimento respondendo antes de seguir. Sem pressa: clique nas alternativas para ver o porquê.
+                    </p>
+                  </div>
+                  {recallAnsweredCount > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span className="ce-badge">
+                        {recallCorrectCount}/{recallQuestions.length} acertos
+                      </span>
+                      <button
+                        type="button"
+                        className="ce-btn ce-btn-ghost ce-btn-sm"
+                        onClick={() => setRecallAnswers({})}
+                      >
+                        <RotateCcw size={12} />
+                        <span>Refazer</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-                {(
-                  [
-                    { level: 1, label: "Nível 1 — Pista Conceitual", text: lesson.hints[0] },
-                    { level: 2, label: "Nível 2 — Orientação Prática", text: lesson.hints[1] },
-                    { level: 3, label: "Nível 3 — Explicação Detalhada", text: lesson.hints[2] },
-                  ] as const
-                ).map(h => {
-                  const unlocked = hintLevel >= h.level;
-                  const canReveal = hintLevel === h.level - 1;
+                {recallQuestions.map((q, qIdx) => {
+                  const chosen = recallAnswers[q.id];
+                  const answered = chosen !== undefined;
+                  const isCorrect = answered && chosen === q.correctIndex;
+
                   return (
-                    <div
-                      key={h.level}
-                      style={{
-                        padding: 13,
-                        borderRadius: 12,
-                        background: "var(--bg-surface-elevated)",
-                        border: `1px solid ${unlocked ? track.accentBorder : "var(--border-subtle)"}`,
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                        <strong style={{ fontSize: 13, color: unlocked ? track.accentSecondary : "var(--text-primary)" }}>
-                          {h.label}
-                        </strong>
-                        {!unlocked && (
-                          <button
-                            type="button"
-                            className="ce-btn ce-btn-ghost ce-btn-sm"
-                            disabled={!canReveal}
-                            onClick={() => setHintLevel(h.level)}
-                          >
-                            {canReveal ? `Revelar Nível ${h.level}` : `Libere o Nível ${h.level - 1} antes`}
-                          </button>
-                        )}
+                    <div key={q.id} className="ce-recall-card">
+                      <div className="ce-recall-prompt">
+                        <span className="ce-badge">Pergunta {qIdx + 1}</span>
+                        <strong>{q.prompt}</strong>
                       </div>
-                      {unlocked && (
-                        <pre
-                          style={{
-                            margin: "8px 0 0",
-                            whiteSpace: "pre-wrap",
-                            fontFamily: "var(--font-sans)",
-                            fontSize: 13,
-                            color: "var(--text-secondary)",
-                            lineHeight: 1.55,
-                          }}
-                        >
-                          {h.text}
-                        </pre>
+                      <div className="ce-recall-options">
+                        {q.options.map((opt, optIdx) => {
+                          const selected = chosen === optIdx;
+                          const rightOpt = answered && optIdx === q.correctIndex;
+                          const wrongChosen = answered && selected && !rightOpt;
+
+                          return (
+                            <button
+                              key={optIdx}
+                              type="button"
+                              className={[
+                                "ce-recall-option",
+                                selected ? "is-selected" : "",
+                                rightOpt ? "is-correct" : "",
+                                wrongChosen ? "is-wrong" : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                              onClick={() =>
+                                setRecallAnswers(prev => ({ ...prev, [q.id]: optIdx }))
+                              }
+                            >
+                              <span className="ce-recall-letter">
+                                {String.fromCharCode(65 + optIdx)}
+                              </span>
+                              <span>{opt}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {answered && (
+                        <div className={`ce-recall-feedback ${isCorrect ? "is-correct" : "is-review"}`}>
+                          <strong>
+                            {isCorrect ? "Correto!" : "Vale revisar este ponto:"}
+                          </strong>{" "}
+                          <AnnotatedText
+                            text={q.explanation}
+                            categories={preferredGlossaryCategories}
+                          />
+                        </div>
                       )}
                     </div>
                   );
                 })}
+
+                {roadmapLinks.length > 0 && (
+                  <div className="ce-recall-roadmap-box">
+                    <strong style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <MapIcon size={14} style={{ color: track.accentColor }} />
+                      <span>Onde esta aula se encaixa nos Roadmaps</span>
+                    </strong>
+                    <div className="ce-rm-rel-chips" style={{ marginTop: 8 }}>
+                      {roadmapLinks.map(({ roadmap, node }) => (
+                        <Link
+                          key={`${roadmap.id}-${node.id}`}
+                          to={`/roadmaps/${roadmap.id}?topico=${node.id}`}
+                          className="ce-rm-rel-btn"
+                        >
+                          <span
+                            className="ce-rm-dot"
+                            style={{ background: roadmap.accentColor }}
+                            aria-hidden="true"
+                          />
+                          <span>
+                            {roadmap.shortTitle}: {node.shortTitle || node.title}
+                          </span>
+                          <ArrowRight size={12} />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             </motion.div>
           </AnimatePresence>
+          )}
 
-          <div
-            style={{
-              padding: "12px 18px",
-              borderTop: "1px solid var(--border-subtle)",
-              background: isAlreadyCompleted ? "rgba(34, 197, 94, 0.08)" : "var(--bg-surface-elevated)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
+          {!pedagogyCollapsed && (
+            <div
+              style={{
+                padding: "12px 18px",
+                borderTop: "1px solid var(--border-subtle)",
+                background: isAlreadyCompleted ? "rgba(34, 197, 94, 0.08)" : "var(--bg-surface-elevated)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
             <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 600 }}>
               <CheckCircle2
                 size={15}
@@ -572,29 +980,78 @@ export const LessonPage: React.FC = () => {
               </span>
             </div>
 
-            {isAlreadyCompleted && nextLesson ? (
+            {activeTab === "retain" ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="ce-btn ce-btn-ghost ce-btn-sm"
+                  onClick={() => {
+                    setActiveTab("practice");
+                    setMobilePane("workbench");
+                  }}
+                >
+                  <span>Voltar à prática</span>
+                </button>
+                {nextLesson ? (
+                  <button
+                    type="button"
+                    className={`ce-btn ce-btn-track ce-btn-sm ${track.darkTextOnAccent ? "is-dark-text" : ""}`}
+                    onClick={() => navigate(`/trilhas/${track.id}/aula/${nextLesson.id}`)}
+                  >
+                    <span>Próxima aula</span>
+                    <ArrowRight size={13} />
+                  </button>
+                ) : (
+                  <Link to={`/trilhas/${track.id}`} className="ce-btn ce-btn-primary ce-btn-sm">
+                    <span>Concluir e voltar à trilha</span>
+                    <ArrowRight size={13} />
+                  </Link>
+                )}
+              </div>
+            ) : activeTab !== "practice" ? (
               <button
                 type="button"
-                className={`ce-btn ce-btn-track ce-btn-sm ${track.darkTextOnAccent ? "is-dark-text" : ""}`}
-                onClick={() => navigate(`/trilhas/${track.id}/aula/${nextLesson.id}`)}
+                className="ce-btn ce-btn-primary ce-btn-sm"
+                onClick={() => {
+                  setActiveTab("practice");
+                  setMobilePane("workbench");
+                }}
               >
-                <span>Próxima aula</span>
+                <span>Ir para Prática</span>
                 <ArrowRight size={13} />
               </button>
-            ) : activeTab !== "challenge" ? (
-              <button
-                type="button"
-                className="ce-btn ce-btn-ghost ce-btn-sm"
-                onClick={() => setActiveTab("challenge")}
-              >
-                <span>Ver desafio</span>
-              </button>
+            ) : (isAlreadyCompleted || allObjectivesNowDone) ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="ce-btn ce-btn-ghost ce-btn-sm"
+                  onClick={() => setActiveTab("retain")}
+                >
+                  <BrainCircuit size={13} />
+                  <span>Revisar &amp; Fixar</span>
+                </button>
+                {nextLesson && (
+                  <button
+                    type="button"
+                    className={`ce-btn ce-btn-track ce-btn-sm ${track.darkTextOnAccent ? "is-dark-text" : ""}`}
+                    onClick={() => navigate(`/trilhas/${track.id}/aula/${nextLesson.id}`)}
+                  >
+                    <span>Próxima aula</span>
+                    <ArrowRight size={13} />
+                  </button>
+                )}
+              </div>
             ) : null}
           </div>
+          )}
         </section>
 
-        {/* COLUNA WORKBENCH ADAPTATIVO */}
-        <div className={mobilePane === "content" ? "is-mobile-hidden" : ""}>
+        {/* COLUNA WORKBENCH ADAPTATIVO (sempre montado para preservar estado) */}
+        <div
+          className={`ce-workbench-slot ${mobilePane === "content" ? "is-mobile-hidden" : ""} ${
+            !isPracticeSplit ? "is-workbench-hidden" : ""
+          }`}
+        >
           {lesson.workbench === "code" && (
             <CodeWorkbench
               trackId={lesson.trackId as "logic" | "cpp" | "js" | "python"}
@@ -637,6 +1094,21 @@ export const LessonPage: React.FC = () => {
               preset={lesson.networkPreset}
               quickCommands={lesson.quickCommands}
               onEvaluate={handleEvaluate}
+            />
+          )}
+
+          {lesson.workbench === "web" && (
+            <WebWorkbench
+              projectKey={`lesson:${lesson.id}`}
+              value={code}
+              starterValue={lesson.starterCode}
+              inspection={lesson.webInspection}
+              saveStatus={saveStatus}
+              saveError={saveError}
+              onChangeValue={handleChangeCode}
+              onEvaluate={handleEvaluate}
+              accentColor={track.accentColor}
+              darkTextOnAccent={track.darkTextOnAccent}
             />
           )}
         </div>

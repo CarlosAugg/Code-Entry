@@ -1,5 +1,5 @@
 import React from "react";
-import { Network, Workflow } from "lucide-react";
+import { Globe, Network, Workflow } from "lucide-react";
 import { TRACK_MAP } from "../../data/tracks";
 import type { TrackId } from "../../types/curriculum";
 
@@ -19,6 +19,13 @@ export const TechIcon: React.FC<TechIconProps> = ({ trackId, size = 28, boxed = 
     />
   ) : trackId === "logic" ? (
     <Workflow
+      size={Math.round(size * 0.88)}
+      style={{ color: track.accentColor }}
+      strokeWidth={2}
+      aria-label={`Ícone ${track.name}`}
+    />
+  ) : trackId === "web" ? (
+    <Globe
       size={Math.round(size * 0.88)}
       style={{ color: track.accentColor }}
       strokeWidth={2}

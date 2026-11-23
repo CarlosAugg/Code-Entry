@@ -46,6 +46,16 @@ export const TRACK_REFERENCES: Record<TrackId, ReferenceItem[]> = {
     { syntax: "def soma(a, b=0):", description: "Define função com parâmetro opcional padrão." },
     { syntax: "int(input())", description: "Lê linha da entrada padrão e converte para inteiro." },
   ],
+  web: [
+    { syntax: "<header>, <main>, <section>, <footer>", description: "Tags semânticas para organizar regiões reais da página HTML5." },
+    { syntax: '<label for="nome"> + <input id="nome">', description: "Associa rótulo acessível ao campo de formulário." },
+    { syntax: "box-sizing: border-box; padding: 16px;", description: "Controla o Box Model sem somar bordas e padding à largura total." },
+    { syntax: "display: flex / display: grid", description: "Sistemas modernos de alinhamento e layout responsivo em CSS." },
+    { syntax: "@media (max-width: 680px) { ... }", description: "Adapta colunas e estilos em telas menores." },
+    { syntax: 'document.querySelector("#id")', description: "Seleciona elementos do DOM usando seletores CSS." },
+    { syntax: 'el.textContent = "Novo" / el.classList.add("ativo")', description: "Atualiza texto e classes de estado no navegador." },
+    { syntax: 'btn.addEventListener("click", fn)', description: "Escuta interações do usuário em botões e formulários." },
+  ],
   linux: [
     { syntax: "pwd / ls -la / cd ~", description: "Confirma caminho atual, lista ocultos e volta para home." },
     { syntax: "mkdir -p pasta/sub", description: "Cria árvore de diretórios recursivamente." },
@@ -78,7 +88,7 @@ export const TRACK_REFERENCES: Record<TrackId, ReferenceItem[]> = {
 };
 
 export const KEYBOARD_SHORTCUTS = [
-  { keys: ["Ctrl", "Enter"], action: "Executar código ou consulta SQL" },
+  { keys: ["Ctrl", "Enter"], action: "Executar código, prévia Web ou consulta SQL" },
   { keys: ["Tab"], action: "Indentar seleção / Autocompletar no terminal" },
   { keys: ["↑", "↓"], action: "Navegar no histórico de comandos do terminal" },
   { keys: ["Ctrl", "F"], action: "Buscar texto dentro do editor de código" },

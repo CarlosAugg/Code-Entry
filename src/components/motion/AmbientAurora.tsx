@@ -45,8 +45,10 @@ export const AmbientAurora: React.FC<AmbientAuroraProps> = ({
       const parent = canvas.parentElement;
       if (!parent) return;
       const rect = parent.getBoundingClientRect();
-      canvas.width = Math.max(300, Math.floor(rect.width));
-      canvas.height = Math.max(140, Math.floor(rect.height));
+      const nextW = Math.max(300, Math.ceil(rect.width));
+      const nextH = Math.max(140, Math.ceil(rect.height));
+      if (canvas.width !== nextW) canvas.width = nextW;
+      if (canvas.height !== nextH) canvas.height = nextH;
     };
 
     resize();
@@ -95,7 +97,7 @@ export const AmbientAurora: React.FC<AmbientAuroraProps> = ({
 
         ctx.save();
         ctx.beginPath();
-        for (let x = 0; x <= w; x += 10) {
+        for (let x = 0; x <= w + 10; x += 10) {
           const cursorPull = Math.exp(-Math.pow((x - focalX) / (w * 0.28), 2)) * ((pointerRatioY - 0.5) * 26);
           const y =
             layer.yOffset +
@@ -109,7 +111,7 @@ export const AmbientAurora: React.FC<AmbientAuroraProps> = ({
         ctx.lineWidth = layer.width;
         ctx.stroke();
 
-        ctx.lineTo(w, h);
+        ctx.lineTo(w + 10, h);
         ctx.lineTo(0, h);
         ctx.closePath();
         ctx.globalAlpha = layer.alpha * 0.55;
@@ -164,10 +166,20 @@ export const AmbientAurora: React.FC<AmbientAuroraProps> = ({
       parent?.addEventListener("mousemove", onPointerMove, { passive: true });
     }
 
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && parent
+        ? new ResizeObserver(() => {
+            resize();
+            draw();
+          })
+        : null;
+    if (resizeObserver && parent) resizeObserver.observe(parent);
+
     window.addEventListener("resize", resize);
     return () => {
       window.cancelAnimationFrame(rafId);
       themeObserver.disconnect();
+      resizeObserver?.disconnect();
       parent?.removeEventListener("mousemove", onPointerMove);
       window.removeEventListener("resize", resize);
     };

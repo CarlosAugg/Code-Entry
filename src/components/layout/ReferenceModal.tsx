@@ -46,7 +46,7 @@ export const ReferenceModal: React.FC = () => {
             <TechIcon trackId={selectedTrack} size={24} boxed />
             <div>
               <h2 id="ref-modal-title" style={{ fontSize: 18 }}>
-                Guia Rápido — {track.name}
+                Manual Rápido — {track.name}
               </h2>
               <p style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
                 Sintaxe essencial, comandos e atalhos da plataforma
@@ -57,7 +57,7 @@ export const ReferenceModal: React.FC = () => {
             type="button"
             className="ce-icon-btn"
             onClick={() => setReferenceOpen(false)}
-            aria-label="Fechar referência"
+            aria-label="Fechar manual"
           >
             <X size={16} />
           </button>

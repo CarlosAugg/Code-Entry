@@ -1,21 +1,44 @@
-import React, { useRef, useState } from "react";
-import { Check, Compass, Download, RotateCcw, Sparkles, Upload, User } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  Compass,
+  Download,
+  Moon,
+  Palette,
+  RotateCcw,
+  Sparkles,
+  Sun,
+  Upload,
+  User,
+} from "lucide-react";
 import { usePlatform } from "../../context/PlatformContext";
+import { resolvePalette } from "../../data/themes";
 import { localStore } from "../../services/localStore";
-import { ThemePalettePicker } from "../shared/ThemePalettePicker";
 
 interface UserMenuPopoverProps {
   onClose: () => void;
 }
 
 export const UserMenuPopover: React.FC<UserMenuPopoverProps> = ({ onClose }) => {
-  const { data, stats, updateSettings, startTour, resetProgress, restoreFromBackup } = usePlatform();
+  const { data, stats, updateSettings, startTour, openThemeDock, resetProgress, restoreFromBackup } = usePlatform();
+  const activeMode = data.settings.theme === "light" ? "light" : "dark";
+  const activePalette = resolvePalette(activeMode, data.settings.themePalette);
+  const navigate = useNavigate();
   const [name, setName] = useState(data.settings.displayName);
   const [goal, setGoal] = useState(String(data.settings.dailyGoalMinutes));
   const [saving, setSaving] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setName(data.settings.displayName);
+    setGoal(String(data.settings.dailyGoalMinutes));
+  }, [data.settings.displayName, data.settings.dailyGoalMinutes]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,8 +137,47 @@ export const UserMenuPopover: React.FC<UserMenuPopoverProps> = ({ onClose }) => 
         </button>
       </form>
 
-      <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-        <ThemePalettePicker variant="compact" />
+      <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+        <button
+          type="button"
+          className="ce-user-theme-trigger"
+          onClick={() => {
+            openThemeDock();
+            onClose();
+          }}
+        >
+          <div className="ce-user-theme-trigger-left">
+            <span className="ce-user-theme-ico">
+              <Palette size={15} />
+            </span>
+            <div style={{ minWidth: 0, textAlign: "left" }}>
+              <strong style={{ display: "block", fontSize: 12.5, color: "var(--text-primary)" }}>
+                Aparência e cores ao vivo
+              </strong>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontSize: 11.5,
+                  color: "var(--text-muted)",
+                }}
+              >
+                {activeMode === "dark" ? <Moon size={11} /> : <Sun size={11} />}
+                <span>{activePalette.name}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="ce-user-theme-trigger-right">
+            <span className="ce-theme-pill-dots" aria-hidden="true">
+              <span style={{ background: activePalette.swatches.primary }} />
+              <span style={{ background: activePalette.swatches.secondary }} />
+              <span style={{ background: activePalette.swatches.tertiary }} />
+            </span>
+            <ChevronRight size={14} style={{ color: "var(--text-muted)" }} />
+          </div>
+        </button>
       </div>
 
       <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -178,6 +240,18 @@ export const UserMenuPopover: React.FC<UserMenuPopoverProps> = ({ onClose }) => 
           <span>Refazer tour guiado</span>
         </button>
 
+        <button
+          type="button"
+          className="ce-btn ce-btn-ghost ce-btn-sm"
+          onClick={() => {
+            onClose();
+            window.dispatchEvent(new CustomEvent("ce-lia-ambient-panel"));
+          }}
+        >
+          <Sparkles size={13} />
+          <span>Eventos da Lia (Teste)</span>
+        </button>
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           <button type="button" className="ce-btn ce-btn-ghost ce-btn-sm" onClick={handleExport}>
             <Download size={13} />
@@ -208,29 +282,49 @@ export const UserMenuPopover: React.FC<UserMenuPopoverProps> = ({ onClose }) => 
             onClick={() => setConfirmReset(true)}
           >
             <RotateCcw size={13} />
-            <span>Zerar progresso local</span>
+            <span>Resetar progresso local</span>
           </button>
         ) : (
-          <div style={{ display: "flex", gap: 6 }}>
-            <button
-              type="button"
-              className="ce-btn ce-btn-sm"
-              style={{ flex: 1, background: "rgba(248,113,113,0.18)", color: "#fca5a5", borderColor: "rgba(248,113,113,0.4)" }}
-              onClick={async () => {
-                await resetProgress();
-                setConfirmReset(false);
-                onClose();
-              }}
-            >
-              Confirmar
-            </button>
-            <button
-              type="button"
-              className="ce-btn ce-btn-ghost ce-btn-sm"
-              onClick={() => setConfirmReset(false)}
-            >
-              Cancelar
-            </button>
+          <div className="ce-reset-confirm-box" role="alertdialog" aria-label="Confirmar reset local">
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 7, fontSize: 12, lineHeight: 1.45 }}>
+              <AlertTriangle size={14} style={{ color: "var(--accent-danger)", flexShrink: 0, marginTop: 2 }} />
+              <span>
+                Esta ação é apenas local neste navegador e removerá{" "}
+                <strong>todos os dados do Code Entry</strong> (aulas, desafios, XP, histórico, conquistas, nome, metas, preferências, tema, onboarding e rascunhos), sem afetar outros sites.
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                type="button"
+                className="ce-btn ce-btn-sm ce-btn-danger"
+                style={{ flex: 1 }}
+                disabled={resetting}
+                onClick={async () => {
+                  if (resetting) return;
+                  setResetting(true);
+                  try {
+                    await resetProgress();
+                    setConfirmReset(false);
+                    onClose();
+                    navigate("/", { replace: true });
+                  } catch (err) {
+                    setFeedback(err instanceof Error ? err.message : "Não foi possível resetar os dados locais.");
+                  } finally {
+                    setResetting(false);
+                  }
+                }}
+              >
+                {resetting ? "Resetando..." : "Sim, resetar tudo"}
+              </button>
+              <button
+                type="button"
+                className="ce-btn ce-btn-ghost ce-btn-sm"
+                disabled={resetting}
+                onClick={() => setConfirmReset(false)}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         )}
       </div>
